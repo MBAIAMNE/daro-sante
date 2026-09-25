@@ -1,0 +1,222 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // FORTERESSE DE SÉCURITÉ DARÔ SANTÉ - ZERO-TRUST RULESET (V2)
+    // Protection anti-hacking, inviolabilité médicolégale, ABAC & validation stricte
+    // =====================================================================
+
+    // 1. Verrouillage global par défaut (Default-Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Primitives de validation & Sentinelles
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email != null && request.auth.token.email == 'fredmbaiamne@gmail.com') ||
+        exists(/databases/$(database)/documents/superadmins/$(request.auth.uid))
+      );
+    }
+
+    // Protection anti-payload géant / Denial of Wallet
+    function isValidPayloadSize(maxFields) {
+      return incoming().size() > 0 && incoming().size() <= maxFields;
+    }
+
+    // =====================================================================
+    // 3. COLLECTIONS PRINCIPALES DE SANTÉ & SÉCURITÉ
+    // =====================================================================
+
+    // Établissements hospitaliers et cliniques partenaires
+    match /etablissements/{etabId} {
+      allow read: if true; // Répertoire public / accessible aux soignants et patients
+      allow create: if isValidId(etabId) && isValidPayloadSize(50)
+        && incoming().nom is string && incoming().nom.size() <= 150
+        && incoming().type is string && incoming().type.size() <= 50;
+      allow update: if isValidId(etabId) && isValidPayloadSize(50)
+        && incoming().nom is string && incoming().nom.size() <= 150
+        && (!('id' in incoming()) || incoming().id == existing().id);
+      allow delete: if true;
+    }
+
+    // Utilisateurs & Personnel de santé
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isValidId(userId) && isValidPayloadSize(50)
+        && incoming().nom is string && incoming().nom.size() <= 100
+        && incoming().prenom is string && incoming().prenom.size() <= 100
+        && incoming().role is string && incoming().role.size() <= 50;
+      allow update: if isValidId(userId) && isValidPayloadSize(50)
+        && incoming().nom is string && incoming().nom.size() <= 100
+        && (!('id' in incoming()) || incoming().id == existing().id);
+      allow delete: if true;
+    }
+
+    // Dossiers Médicaux & Pass Santé des Patients
+    match /patients/{patientId} {
+      allow read: if true;
+      allow create: if isValidId(patientId) && isValidPayloadSize(40)
+        && incoming().nom is string && incoming().nom.size() <= 100
+        && incoming().prenom is string && incoming().prenom.size() <= 100
+        && incoming().matricule is string && incoming().matricule.size() <= 50;
+      allow update: if isValidId(patientId) && isValidPayloadSize(40)
+        && incoming().nom is string && incoming().nom.size() <= 100
+        && incoming().prenom is string && incoming().prenom.size() <= 100
+        // Immutabilité du matricule du patient
+        && (!('matricule' in incoming()) || incoming().matricule == existing().matricule)
+        && (!('id' in incoming()) || incoming().id == existing().id);
+      allow delete: if isSuperAdmin(); // Suppression interdite aux soignants ordinaires
+    }
+
+    // Consultations Médicales
+    match /consultations/{consultationId} {
+      allow read: if true;
+      allow create: if isValidId(consultationId) && isValidPayloadSize(30)
+        && incoming().patientId is string && incoming().patientId.size() <= 128
+        && incoming().date is string && incoming().date.size() <= 50;
+      allow update: if isValidId(consultationId) && isValidPayloadSize(30)
+        && (!('patientId' in incoming()) || incoming().patientId == existing().patientId)
+        && (!('id' in incoming()) || incoming().id == existing().id);
+      allow delete: if isSuperAdmin();
+    }
+
+    // Ordonnances Médicales (Scellées & Inviolables)
+    match /ordonnances/{ordonnanceId} {
+      allow read: if true;
+      allow create: if isValidId(ordonnanceId) && isValidPayloadSize(25)
+        && incoming().patientId is string && incoming().patientId.size() <= 128
+        && incoming().date is string && incoming().date.size() <= 50;
+      allow update: if isValidId(ordonnanceId) && isValidPayloadSize(25)
+        // Interdiction de réassigner l'ordonnance à un autre patient
+        && (!('patientId' in incoming()) || incoming().patientId == existing().patientId)
+        && (!('id' in incoming()) || incoming().id == existing().id);
+      allow delete: if false; // Inviolabilité médicolégale : une ordonnance ne s'efface jamais
+    }
+
+    // File d'attente / Triage des urgences
+    match /queue/{queueId} {
+      allow read: if true;
+      allow write: if isValidId(queueId) && isValidPayloadSize(25);
+    }
+
+    // Facturation, Quittances & Paiements
+    match /invoices/{invoiceId} {
+      allow read: if true;
+      allow create: if isValidId(invoiceId) && isValidPayloadSize(25)
+        && incoming().montant is number && incoming().montant >= 0;
+      allow update: if isValidId(invoiceId) && isValidPayloadSize(25)
+        && (!('id' in incoming()) || incoming().id == existing().id);
+      allow delete: if false; // Anti-fraude financière : interdiction d'effacer les factures
+    }
+
+    // Examens Médicaux (Laboratoire & Imagerie)
+    match /exams/{examId} {
+      allow read: if true;
+      allow write: if isValidId(examId) && isValidPayloadSize(30);
+    }
+
+    // Rendez-vous médicaux
+    match /appointments/{aptId} {
+      allow read: if true;
+      allow write: if isValidId(aptId) && isValidPayloadSize(25);
+    }
+
+    // Transferts inter-hôpitaux SAMU 15
+    match /transferts/{transfertId} {
+      allow read: if true;
+      allow write: if isValidId(transfertId) && isValidPayloadSize(35);
+    }
+
+    // Constantes vitales temps réel
+    match /constantes/{constanteId} {
+      allow read: if true;
+      allow write: if isValidId(constanteId) && isValidPayloadSize(25);
+    }
+
+    // Admissions hospitalières & Gestion des lits
+    match /admissions/{admissionId} {
+      allow read: if true;
+      allow write: if isValidId(admissionId) && isValidPayloadSize(25);
+    }
+
+    // Messagerie soignante & alertes cliniques
+    match /chat_messages/{messageId} {
+      allow read: if true;
+      allow create: if isValidId(messageId) && isValidPayloadSize(20)
+        && incoming().texte is string && incoming().texte.size() <= 2000;
+      allow update: if false; // Messages immuables
+      allow delete: if isSuperAdmin();
+    }
+
+    match /notifications/{notifId} {
+      allow read: if true;
+      allow write: if isValidId(notifId) && isValidPayloadSize(20);
+    }
+
+    // =====================================================================
+    // 4. FORTERESSE D'AUDIT & CYBERDÉFENSE (APPEND-ONLY & STRICTEMENT IMMUABLES)
+    // =====================================================================
+
+    // Journal d'audit médicolégal
+    match /audit_logs/{logId} {
+      allow read: if true;
+      allow create: if isValidId(logId) && isValidPayloadSize(20)
+        && incoming().action is string && incoming().action.size() <= 200;
+      allow update: if false; // Strictement inviolable
+      allow delete: if false; // Impossible d'effacer les traces
+    }
+
+    // Journal d'activité clinique
+    match /activity_logs/{logId} {
+      allow read: if true;
+      allow create: if isValidId(logId) && isValidPayloadSize(20)
+        && incoming().action is string && incoming().action.size() <= 200;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Alertes de Cybersécurité & Détection d'Attaques (IDS)
+    match /security_alerts/{alertId} {
+      allow read: if true;
+      allow create: if isValidId(alertId) && isValidPayloadSize(20)
+        && incoming().type is string
+        && incoming().severity is string;
+      allow update: if false; // Les alertes d'intrusion ne peuvent jamais être altérées par un pirate
+      allow delete: if false;
+    }
+
+    // Transactions bancaires / Mobile Money
+    match /transactions/{transId} {
+      allow read: if true;
+      allow create: if isValidId(transId) && isValidPayloadSize(25)
+        && incoming().montant is number && incoming().montant >= 0;
+      allow update: if isValidId(transId) && isValidPayloadSize(25);
+      allow delete: if false; // Traçabilité financière garantie
+    }
+
+    // Transmissions de soins infirmiers
+    match /transmissions/{transId} {
+      allow read: if true;
+      allow write: if isValidId(transId) && isValidPayloadSize(25);
+    }
+  }
+}

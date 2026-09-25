@@ -1,0 +1,11 @@
+{
+  "name": "DARÔ - Clinique & Urgences QR N'Djamena",
+  "description": "Système d'Information Hospitalier et DMP Tchad avec cloisonnement strict : création de comptes soignants réservée au Directeur et à l'Administrateur, comptes patients indépendants rattachés à leur hôpital de choix avec rendez-vous, téléconsultations visio, ordonnances, examens et messagerie sécurisée.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "entities": {
+    "users": {
+      "title": "Utilisateurs du Personnel de Santé",
+      "description": "Personnel soignant et administrateurs de la clinique / hôpital",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 128 },
+        "nom": { "type": "string", "maxLength": 100 },
+        "prenom": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "maxLength": 50 },
+        "specialite": { "type": "string", "maxLength": 100 },
+        "telephone": { "type": "string", "maxLength": 30 },
+        "avatar": { "type": "string" },
+        "nomUtilisateur": { "type": "string", "maxLength": 100 },
+        "motDePasse": { "type": "string", "maxLength": 100 },
+        "motDePasseModifie": { "type": "boolean" },
+        "dateDerniereModifMDP": { "type": "string", "maxLength": 50 },
+        "etablissementId": { "type": "string", "maxLength": 128 },
+        "etablissementNom": { "type": "string", "maxLength": 150 },
+        "statut": { "type": "string", "maxLength": 30 },
+        "actif": { "type": "boolean" },
+        "dateCreation": { "type": "string", "maxLength": 50 },
+        "derniereConnexion": { "type": "string", "maxLength": 100 },
+        "posteActif": { "type": "string", "maxLength": 100 },
+        "signatureElectronique": { "type": "string" },
+        "dateDerniereSignature": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "nom", "prenom", "role"]
+    },
+    "patients": {
+      "title": "Dossiers Patients & Pass Santé",
+      "description": "Dossiers médicaux et Pass Santé citoyen sécurisé",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "matricule": { "type": "string", "maxLength": 50 },
+        "nom": { "type": "string", "maxLength": 100 },
+        "prenom": { "type": "string", "maxLength": 100 },
+        "telephone": { "type": "string", "maxLength": 30 },
+        "email": { "type": "string", "maxLength": 120 },
+        "dateNaissance": { "type": "string", "maxLength": 30 },
+        "sexe": { "type": "string", "enum": ["M", "F"] },
+        "quartier": { "type": "string", "maxLength": 100 },
+        "groupeSanguin": { "type": "string", "maxLength": 10 },
+        "electrophoreseHb": { "type": "string", "maxLength": 20 },
+        "contactUrgenceNom": { "type": "string", "maxLength": 100 },
+        "contactUrgenceTel": { "type": "string", "maxLength": 30 },
+        "contactUrgenceRelation": { "type": "string", "maxLength": 50 },
+        "allergies": { "type": "array" },
+        "maladiesChroniques": { "type": "array" },
+        "etablissementId": { "type": "string", "maxLength": 128 },
+        "statutDossier": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "matricule", "nom", "prenom"]
+    },
+    "consultations": {
+      "title": "Consultations Médicales",
+      "description": "Consultations, motifs et observations cliniques",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "patientId": { "type": "string", "maxLength": 128 },
+        "patientNom": { "type": "string", "maxLength": 100 },
+        "medecinId": { "type": "string", "maxLength": 128 },
+        "medecinNom": { "type": "string", "maxLength": 100 },
+        "date": { "type": "string", "maxLength": 50 },
+        "motif": { "type": "string", "maxLength": 500 },
+        "diagnostic": { "type": "string", "maxLength": 2000 },
+        "etablissementId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "patientId", "date"]
+    },
+    "ordonnances": {
+      "title": "Ordonnances Médicales",
+      "description": "Prescriptions sécurisées avec sceau cryptographique",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "patientId": { "type": "string", "maxLength": 128 },
+        "patientNom": { "type": "string", "maxLength": 100 },
+        "medecinNom": { "type": "string", "maxLength": 100 },
+        "date": { "type": "string", "maxLength": 50 },
+        "medicaments": { "type": "array" },
+        "statut": { "type": "string", "maxLength": 30 },
+        "etablissementId": { "type": "string", "maxLength": 128 },
+        "codeSecurite": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "patientId", "date"]
+    },
+    "etablissements": {
+      "title": "Structures Sanitaires",
+      "description": "Hôpitaux et cliniques du réseau DARÔ",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "nom": { "type": "string", "maxLength": 150 },
+        "code": { "type": "string", "maxLength": 50 },
+        "type": { "type": "string", "maxLength": 50 },
+        "ville": { "type": "string", "maxLength": 100 },
+        "pays": { "type": "string", "maxLength": 100 },
+        "adresse": { "type": "string", "maxLength": 200 },
+        "telephone": { "type": "string", "maxLength": 30 },
+        "email": { "type": "string", "maxLength": 120 },
+        "logo": { "type": "string" },
+        "directeurNom": { "type": "string", "maxLength": 100 },
+        "directeurEmail": { "type": "string", "maxLength": 120 },
+        "statut": { "type": "string", "maxLength": 30 },
+        "dateCreation": { "type": "string", "maxLength": 50 },
+        "totalPatients": { "type": "number" },
+        "totalConsultations": { "type": "number" },
+        "actif": { "type": "boolean" }
+      },
+      "required": ["id", "nom", "type", "ville"]
+    },
+    "audit_logs": {
+      "title": "Journal d'Audit Médical Inviolable",
+      "description": "Traçabilité médicolégale et historique immuable des actions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string", "maxLength": 50 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userNom": { "type": "string", "maxLength": 100 },
+        "action": { "type": "string", "maxLength": 150 },
+        "details": { "type": "string", "maxLength": 1000 },
+        "ip": { "type": "string", "maxLength": 60 }
+      },
+      "required": ["id", "timestamp", "action"]
+    },
+    "security_alerts": {
+      "title": "Alertes de Cybersécurité",
+      "description": "Journal des tentatives d'intrusion et d'attaques bloquées",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string", "maxLength": 50 },
+        "type": { "type": "string", "maxLength": 50 },
+        "severity": { "type": "string", "maxLength": 20 },
+        "source": { "type": "string", "maxLength": 100 },
+        "details": { "type": "string", "maxLength": 1000 },
+        "blocked": { "type": "boolean" }
+      },
+      "required": ["id", "timestamp", "type", "severity"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "Comptes du personnel hospitalier et soignants"
+    },
+    "/patients/{patientId}": {
+      "schema": "patients",
+      "description": "Dossiers médicaux partagés et Pass Santé"
+    },
+    "/consultations/{consultationId}": {
+      "schema": "consultations",
+      "description": "Consultations et diagnostics médicaux"
+    },
+    "/ordonnances/{ordonnanceId}": {
+      "schema": "ordonnances",
+      "description": "Prescriptions pharmaceutiques scellées"
+    },
+    "/etablissements/{etabId}": {
+      "schema": "etablissements",
+      "description": "Établissements hospitaliers et cliniques partenaires"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "audit_logs",
+      "description": "Logs d'audit médicolégaux immuables"
+    },
+    "/security_alerts/{alertId}": {
+      "schema": "security_alerts",
+      "description": "Registre des alertes de sécurité et attaques neutralisées"
+    }
+  }
+}
