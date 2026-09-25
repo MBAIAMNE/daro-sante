@@ -87,6 +87,7 @@ import {
   saveAppointmentCloud,
   saveTransfertCloud,
 } from '../services/firestoreSync';
+import { FRED_MBAI_REAL_AVATAR } from '../assets/fredAdminAvatar';
 
 interface ClinicContextType {
   // Cloud Database & Parallel Sync
@@ -355,26 +356,34 @@ function mergeEtablissements(currentList: Etablissement[], incomingList: Etablis
 
 function mergeUsers(currentList: User[], incomingList: User[]): User[] {
   const map = new Map<string, User>();
-  // 1. First add all incoming
-  incomingList.forEach(u => {
+  // 1. Add current list first
+  currentList.forEach(u => {
     if (u && u.id) map.set(u.id, u);
   });
-  // 2. Overlay current list so staff and admin profile changes take precedence
-  currentList.forEach(u => {
-    if (u && u.id) {
-      if (map.has(u.id)) {
-        const inc = map.get(u.id)!;
-        map.set(u.id, {
+  // 2. Incoming from Firestore/backend overlays current list and takes precedence for profile updates
+  incomingList.forEach(inc => {
+    if (inc && inc.id) {
+      if (map.has(inc.id)) {
+        const cur = map.get(inc.id)!;
+        // Priority for custom base64 avatar
+        const bestAvatar =
+          inc.avatar && inc.avatar.startsWith('data:')
+            ? inc.avatar
+            : cur.avatar && cur.avatar.startsWith('data:')
+            ? cur.avatar
+            : inc.avatar || cur.avatar;
+
+        map.set(inc.id, {
+          ...cur,
           ...inc,
-          ...u,
-          avatar: u.avatar || inc.avatar,
-          nom: u.nom || inc.nom,
-          prenom: u.prenom || inc.prenom,
-          motDePasse: u.motDePasse || inc.motDePasse,
-          motDePasseModifie: u.motDePasseModifie !== undefined ? u.motDePasseModifie : inc.motDePasseModifie,
+          avatar: bestAvatar,
+          nom: inc.nom || cur.nom,
+          prenom: inc.prenom || cur.prenom,
+          telephone: inc.telephone || cur.telephone,
+          role: inc.role || cur.role,
         });
       } else {
-        map.set(u.id, u);
+        map.set(inc.id, inc);
       }
     }
   });
@@ -435,10 +444,10 @@ export const ClinicProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       motDePasse: 'daro2025',
       role: 'superadmin',
       specialite: 'Concepteur de la plateforme & Super Administrateur DARÔ',
-      telephone: '+235 66 00 00 00',
+      telephone: '+235 62 39 56 06',
       actif: true,
       statut: 'actif',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+      avatar: FRED_MBAI_REAL_AVATAR,
       ...existingSuperAdmin,
       ...savedSuperAdminProfile, // Saved edits (name, photo, etc.) always take precedence!
     });
@@ -871,12 +880,18 @@ export const ClinicProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (cloudUsers && cloudUsers.length > 0) {
         setAllUsers(prev => {
           const merged = mergeUsers(prev, cloudUsers);
-          // Auto-sync any local users that might be missing from cloud
-          prev.forEach(u => {
-            if (!cloudUsers.some(cu => cu.id === u.id)) {
-              saveUserCloud(u).catch(() => {});
-            }
-          });
+          // Sync currentUser with real Firestore profile data
+          const superAdminDoc = merged.find(u => u.id === 'u-superadmin');
+          if (superAdminDoc) {
+            try {
+              localStorage.setItem('daro_superadmin_profile', JSON.stringify(superAdminDoc));
+            } catch (e) {}
+          }
+          const currentDoc = merged.find(u => u.id === currentUser.id) || superAdminDoc;
+          if (currentDoc && (currentUser.id === 'u-superadmin' || currentDoc.id === currentUser.id)) {
+            setCurrentUser(curr => ({ ...curr, ...currentDoc }));
+          }
+          saveStorage('users', merged);
           return merged;
         });
       }
@@ -916,12 +931,7 @@ export const ClinicProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       if (cloudEtabs && cloudEtabs.length > 0) {
         setEtablissements(prev => {
           const merged = mergeEtablissements(prev, cloudEtabs);
-          // Auto-sync any local custom clinics that are not yet in Firestore
-          prev.forEach(e => {
-            if (!cloudEtabs.some(ce => ce.id === e.id)) {
-              saveEtablissementCloud(e).catch(() => {});
-            }
-          });
+          saveStorage('etablissements', merged);
           return merged;
         });
       }
