@@ -64,6 +64,19 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
+// Endpoint Health Check pour UptimeRobot, cron-job.org & Monitoring anti-sommeil
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    server: 'DARÔ Hospital Network',
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
+app.get('/ping', (_req, res) => {
+  res.status(200).send('pong');
+});
+
 // Persistent database file setup
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'clinic-storage.json');

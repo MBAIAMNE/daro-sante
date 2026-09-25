@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ClinicProvider, useClinic } from './context/ClinicContext';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { QRModalScanner } from './components/QRModalScanner';
 import { PatientJourneyWalkthrough } from './components/PatientJourneyWalkthrough';
 
@@ -250,7 +251,7 @@ const AppContent: React.FC = () => {
   // Main Clinical Application Layout matching the "Professional Polish" Theme
   // Structure: Full-height flex row with left sidebar, and right main column with header and scrollable view
   return (
-    <div id="daro-app-layout" className="flex h-screen w-screen max-w-[100vw] bg-[#F8FAFC] font-sans overflow-hidden text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900">
+    <div id="daro-app-layout" className="flex h-[100dvh] min-h-[100dvh] w-full max-w-[100vw] bg-[#F8FAFC] font-sans overflow-hidden text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900 relative">
       {/* Left Sidebar */}
       <Sidebar
         isOpen={sidebarOpen}
@@ -272,12 +273,15 @@ const AppContent: React.FC = () => {
           onOpenSubscriptions={() => setShowSubscriptionModal(true)}
         />
 
-        {/* Scrollable Main View Container (Centralized full-width & full-height inheritance) */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] w-full h-full">
+        {/* Scrollable Main View Container (Centralized full-width & full-height inheritance with mobile bottom nav space) */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] w-full h-full pb-16 md:pb-0">
           <div className="w-full min-h-full">
             {renderView()}
           </div>
         </main>
+
+        {/* Mobile Bottom Navigation Bar (< 768px) */}
+        <MobileBottomNav onOpenMenu={() => setSidebarOpen(true)} />
       </div>
 
       {/* Global Modals */}
