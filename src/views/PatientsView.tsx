@@ -35,6 +35,7 @@ import {
   Activity,
   Droplet,
   UserCog,
+  Smartphone,
 } from 'lucide-react';
 import { useClinic } from '../context/ClinicContext';
 import { Patient, GroupeSanguin } from '../types';
@@ -65,6 +66,7 @@ export const PatientsView: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatientDossier, setSelectedPatientDossier] = useState<Patient | null>(null);
   const [patientToPrintQR, setPatientToPrintQR] = useState<Patient | null>(null);
+  const [qrPrintMode, setQrPrintMode] = useState<'sticker' | 'carte' | 'fiche'>('sticker');
   const [dossierTab, setDossierTab] = useState<
     'synthese' | 'consultations' | 'ordonnances' | 'examens' | 'vaccinations' | 'biometrie' | 'documents' | 'antecedents'
   >('synthese');
@@ -344,6 +346,17 @@ export const PatientsView: React.FC = () => {
 
               <button
                 onClick={() => {
+                  setQrPrintMode('sticker');
+                  setPatientToPrintQR(patient);
+                }}
+                className="p-1.5 rounded-lg bg-teal-50 border border-teal-300 hover:bg-teal-100 text-teal-700 transition"
+                title="Imprimer directement l'autocollant QR Code pour le dos du smartphone"
+              >
+                <Smartphone className="w-4 h-4 text-teal-600" />
+              </button>
+
+              <button
+                onClick={() => {
                   setPatientToEditProfile(patient);
                   setShowPatientProfileModal(true);
                 }}
@@ -537,7 +550,7 @@ export const PatientsView: React.FC = () => {
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setShowQRCardModal(null)}
@@ -546,7 +559,20 @@ export const PatientsView: React.FC = () => {
                   Fermer
                 </button>
                 <button
-                  onClick={handlePrintQRCard}
+                  onClick={() => {
+                    setQrPrintMode('sticker');
+                    setPatientToPrintQR(showQRCardModal);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow flex items-center gap-1.5"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  <span>Sticker Smartphone (QR)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setQrPrintMode('carte');
+                    setPatientToPrintQR(showQRCardModal);
+                  }}
                   className="px-4 py-2 rounded-xl bg-[#0B3C5D] hover:bg-[#1E88E5] text-white text-xs font-bold shadow flex items-center gap-1.5"
                 >
                   <Printer className="w-4 h-4" />
@@ -1403,6 +1429,7 @@ export const PatientsView: React.FC = () => {
         <PatientQRCardPrintModal
           isOpen={!!patientToPrintQR}
           patient={patientToPrintQR}
+          initialMode={qrPrintMode}
           onClose={() => setPatientToPrintQR(null)}
         />
       )}

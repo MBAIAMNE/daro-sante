@@ -14,6 +14,11 @@ import {
   User,
   Activity,
   CheckCircle2,
+  Smartphone,
+  Scissors,
+  FileText,
+  CreditCard,
+  Layers,
 } from 'lucide-react';
 import { Patient } from '../types';
 import { Logo } from './Logo';
@@ -23,15 +28,24 @@ interface PatientQRCardPrintModalProps {
   isOpen: boolean;
   onClose: () => void;
   patient: Patient | null;
+  initialMode?: 'sticker' | 'carte' | 'fiche';
 }
 
 export const PatientQRCardPrintModal: React.FC<PatientQRCardPrintModalProps> = ({
   isOpen,
   onClose,
   patient,
+  initialMode = 'sticker',
 }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const [formatMode, setFormatMode] = useState<'carte' | 'fiche'>('carte');
+  const [formatMode, setFormatMode] = useState<'sticker' | 'carte' | 'fiche'>(initialMode);
+  const [stickerLayout, setStickerLayout] = useState<'single' | 'quad'>('single');
+
+  useEffect(() => {
+    if (isOpen && initialMode) {
+      setFormatMode(initialMode);
+    }
+  }, [isOpen, initialMode]);
 
   useEffect(() => {
     if (!patient) return;
@@ -42,7 +56,7 @@ export const PatientQRCardPrintModal: React.FC<PatientQRCardPrintModalProps> = (
       width: 400,
       margin: 1,
       color: {
-        dark: '#0B3C5D',
+        dark: '#000000', // Pure black provides maximum optical contrast for smartphone cameras
         light: '#FFFFFF',
       },
     })
@@ -60,6 +74,91 @@ export const PatientQRCardPrintModal: React.FC<PatientQRCardPrintModalProps> = (
   const patientBlood = patient.groupeSanguin && patient.groupeSanguin !== 'Inconnu' ? patient.groupeSanguin : 'Non déterminé';
   const patientElectrophorese = patient.electrophoreseHb || 'Non renseigné';
 
+  // Helper to render a single smartphone sticker
+  const renderSmartphoneSticker = (keyIndex?: number) => (
+    <div
+      key={keyIndex}
+      className="sticker-cut-box relative bg-white border-2 border-dashed border-slate-400 p-2.5 rounded-2xl shadow-xs print:shadow-none print:border-dashed print:border-slate-800 inline-block w-[240px] text-left select-none"
+    >
+      {/* Cut line helper notice */}
+      <div className="flex items-center justify-between text-[8px] text-slate-400 font-mono mb-1 pb-0.5 border-b border-dashed border-slate-200">
+        <span className="flex items-center gap-1 font-bold text-slate-500">
+          <Scissors className="w-2.5 h-2.5 text-slate-600" /> Découpe sticker
+        </span>
+        <span>~ 5.5 x 6.5 cm</span>
+      </div>
+
+      {/* Main sticker inner container */}
+      <div className="bg-white border-2 border-slate-900 rounded-xl p-2.5 space-y-2 text-center">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-800 pb-1">
+          <div className="flex items-center gap-1.5 text-left">
+            <Logo size="xs" />
+            <div>
+              <span className="text-[9px] font-black uppercase text-[#0B3C5D] block leading-none">
+                DARÔ SANTÉ
+              </span>
+              <span className="text-[7px] font-bold text-rose-600 block uppercase leading-none mt-0.5">
+                URGENCE VITALE
+              </span>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="text-[7px] text-slate-400 uppercase block font-mono">TCHAD</span>
+            <span className="text-[8px] font-black text-slate-800 font-mono">24h/7j</span>
+          </div>
+        </div>
+
+        {/* QR Code Container */}
+        <div className="bg-white p-1 rounded-lg border border-slate-300 inline-block shadow-2xs">
+          {qrDataUrl ? (
+            <img
+              src={qrDataUrl}
+              alt={`QR Code d'urgence ${patient.prenom} ${patient.nom}`}
+              className="w-36 h-36 mx-auto object-contain"
+            />
+          ) : (
+            <div className="w-36 h-36 bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+              Génération QR...
+            </div>
+          )}
+        </div>
+
+        {/* Patient Identity */}
+        <div className="space-y-0.5">
+          <h4 className="text-[12px] font-black text-slate-950 uppercase leading-tight tracking-tight">
+            {patient.nom} {patient.prenom}
+          </h4>
+          <div className="flex items-center justify-center gap-2 text-[9px]">
+            <span className="font-mono text-slate-700 font-semibold">{patient.matricule}</span>
+            <span className="px-1.5 py-0.2 rounded-md bg-rose-600 text-white font-black text-[9px] shadow-2xs">
+              {patientBlood}
+            </span>
+          </div>
+        </div>
+
+        {/* Emergency info box */}
+        <div className="bg-slate-100 rounded-lg p-1.5 text-[8px] text-slate-700 space-y-0.5 border border-slate-200">
+          <p className="font-extrabold text-[#0B3C5D] uppercase text-[7.5px] tracking-tight">
+            📱 AUTOCOLLANT SMARTPHONE
+          </p>
+          <p className="text-[7.5px] text-slate-600">
+            SAMU : <strong className="text-rose-700">15</strong> • Urgences : <strong>22 51 51 51</strong>
+          </p>
+          {patient.contactUrgenceTel && (
+            <p className="text-[7.5px] text-slate-700 truncate font-semibold">
+              Proche : {patient.contactUrgenceTel}
+            </p>
+          )}
+        </div>
+
+        <p className="text-[6.5px] text-slate-400 uppercase font-mono italic">
+          Scannez avec tout smartphone en cas de malaise
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <div
       id="modal-print-qr-card-backdrop"
@@ -67,51 +166,85 @@ export const PatientQRCardPrintModal: React.FC<PatientQRCardPrintModalProps> = (
     >
       <div
         id="modal-print-qr-card-container"
-        className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in fade-in"
+        className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in fade-in"
       >
         {/* Action Header (Hidden during actual print) */}
-        <div className="no-print bg-slate-900 text-white p-4 px-6 flex items-center justify-between border-b border-slate-800">
+        <div className="no-print bg-slate-900 text-white p-4 px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold">
-              <QrCode className="w-4 h-4" />
+              {formatMode === 'sticker' ? (
+                <Smartphone className="w-4 h-4" />
+              ) : formatMode === 'carte' ? (
+                <CreditCard className="w-4 h-4" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-100">
-                Impression Carte d'Urgence & Pass QR DARÔ
+              <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                <span>Pass QR d'Urgence • {patient.prenom} {patient.nom}</span>
+                <span className="font-mono text-[10px] text-teal-400 bg-teal-950/80 px-2 py-0.5 rounded border border-teal-800">
+                  {patient.matricule}
+                </span>
               </h3>
               <p className="text-[11px] text-slate-400">
-                Badge médical scannable hors-ligne pour les urgences à N'Djamena
+                {formatMode === 'sticker'
+                  ? "Format autocollant compact calibré pour être collé au dos d'un smartphone"
+                  : formatMode === 'carte'
+                  ? 'Format badge de poche / carte santé d’urgence'
+                  : 'Format fiche médicale détaillée pour dossier papier'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Format toggle */}
-            <div className="hidden sm:flex bg-slate-800 p-0.5 rounded-xl border border-slate-700 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Format toggle tabs */}
+            <div className="flex bg-slate-800 p-0.5 rounded-xl border border-slate-700 text-xs">
+              <button
+                type="button"
+                onClick={() => setFormatMode('sticker')}
+                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition ${
+                  formatMode === 'sticker'
+                    ? 'bg-teal-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Format autocollant pour smartphone"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Sticker Téléphone</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setFormatMode('carte')}
-                className={`px-3 py-1 rounded-lg font-bold transition ${
-                  formatMode === 'carte' ? 'bg-[#1E88E5] text-white' : 'text-slate-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition ${
+                  formatMode === 'carte'
+                    ? 'bg-[#1E88E5] text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
                 }`}
+                title="Format carte / badge portefeuille"
               >
-                Format Badge Poche
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Badge Poche</span>
               </button>
               <button
                 type="button"
                 onClick={() => setFormatMode('fiche')}
-                className={`px-3 py-1 rounded-lg font-bold transition ${
-                  formatMode === 'fiche' ? 'bg-[#1E88E5] text-white' : 'text-slate-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition ${
+                  formatMode === 'fiche'
+                    ? 'bg-[#1E88E5] text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
                 }`}
+                title="Format fiche d'admission A4"
               >
-                Format Fiche A4
+                <FileText className="w-3.5 h-3.5" />
+                <span>Fiche A4</span>
               </button>
             </div>
 
             <button
               onClick={handlePrint}
               id="btn-print-qr-card-trigger"
-              className="px-4 py-2 rounded-xl bg-[#1E88E5] hover:bg-[#1565C0] text-white font-bold text-xs flex items-center gap-2 shadow-sm transition"
+              className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs flex items-center gap-2 shadow transition"
             >
               <Printer className="w-4 h-4" />
               <span>Imprimer</span>
@@ -126,13 +259,75 @@ export const PatientQRCardPrintModal: React.FC<PatientQRCardPrintModalProps> = (
           </div>
         </div>
 
+        {/* Sub-toolbar for Sticker options (Hidden during print) */}
+        {formatMode === 'sticker' && (
+          <div className="no-print bg-teal-50/80 border-b border-teal-200 px-6 py-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 text-teal-900">
+              <span className="font-semibold">Disposition d'impression :</span>
+              <button
+                type="button"
+                onClick={() => setStickerLayout('single')}
+                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] border transition ${
+                  stickerLayout === 'single'
+                    ? 'bg-teal-700 text-white border-teal-700 shadow-2xs'
+                    : 'bg-white text-teal-800 border-teal-300 hover:bg-teal-100'
+                }`}
+              >
+                1 Autocollant Unique
+              </button>
+              <button
+                type="button"
+                onClick={() => setStickerLayout('quad')}
+                className={`px-2.5 py-1 rounded-lg font-bold text-[11px] border transition flex items-center gap-1 ${
+                  stickerLayout === 'quad'
+                    ? 'bg-teal-700 text-white border-teal-700 shadow-2xs'
+                    : 'bg-white text-teal-800 border-teal-300 hover:bg-teal-100'
+                }`}
+              >
+                <Layers className="w-3 h-3" />
+                <span>Planche de 4 Autocollants (A4)</span>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-teal-700 font-medium">
+              💡 Idéal pour coller au dos du smartphone ou sous la coque transparente
+            </p>
+          </div>
+        )}
+
         {/* Printable Area */}
-        <div className="p-6 sm:p-8 bg-slate-50 print:bg-white print:p-0">
-          {formatMode === 'carte' ? (
+        <div className="p-6 sm:p-8 bg-slate-100 print:bg-white print:p-0 flex justify-center">
+          {formatMode === 'sticker' ? (
+            /* Smartphone Sticker Format */
+            <div id="printable-qr-sticker" className="w-full flex flex-col items-center">
+              {stickerLayout === 'single' ? (
+                <div className="p-4 bg-white rounded-3xl border border-slate-200 shadow-md print:border-none print:shadow-none print:p-0">
+                  {renderSmartphoneSticker()}
+                </div>
+              ) : (
+                <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-md print:border-none print:shadow-none print:p-0 space-y-4">
+                  <div className="text-center no-print pb-2 border-b border-slate-200">
+                    <span className="text-xs font-bold text-slate-700">
+                      Planche de 4 autocollants smartphone prêts à découper
+                    </span>
+                    <p className="text-[11px] text-slate-500">
+                      Un pour le smartphone, un pour le carnet de santé, un pour la carte d'identité, un pour le dossier.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print:grid-cols-2 print:gap-4">
+                    {renderSmartphoneSticker(1)}
+                    {renderSmartphoneSticker(2)}
+                    {renderSmartphoneSticker(3)}
+                    {renderSmartphoneSticker(4)}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : formatMode === 'carte' ? (
             /* Badge Format (85x54 standard or emergency wallet badge) */
             <div
               id="printable-qr-card"
-              className="max-w-md mx-auto bg-white rounded-2xl border-2 border-slate-800 shadow-md p-5 space-y-4 print:border-2 print:shadow-none print:m-0"
+              className="max-w-md w-full bg-white rounded-2xl border-2 border-slate-800 shadow-md p-5 space-y-4 print:border-2 print:shadow-none print:m-0"
             >
               {/* Badge Top Header */}
               <div className="flex items-center justify-between border-b-2 border-slate-800 pb-2.5">
@@ -261,7 +456,7 @@ export const PatientQRCardPrintModal: React.FC<PatientQRCardPrintModalProps> = (
             /* Full Sheet A4 Format */
             <div
               id="printable-qr-sheet"
-              className="bg-white rounded-2xl border-2 border-slate-800 p-8 space-y-6 print:border-none print:p-4"
+              className="bg-white rounded-2xl border-2 border-slate-800 p-8 space-y-6 print:border-none print:p-4 max-w-2xl w-full"
             >
               {/* Header */}
               <div className="border-b-2 border-slate-800 pb-4 flex items-center justify-between">
@@ -389,3 +584,4 @@ export const PatientQRCardPrintModal: React.FC<PatientQRCardPrintModalProps> = (
     </div>
   );
 };
+

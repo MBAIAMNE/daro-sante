@@ -33,6 +33,24 @@
     box-shadow: none !important;
     page-break-inside: avoid;
   }
+  /* Optimisation impression modale & autocollant smartphone */
+  #modal-print-qr-card-backdrop {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  #modal-print-qr-card-container {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
 }
 
 /* Custom subtle scrollbar */
