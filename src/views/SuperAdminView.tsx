@@ -26,6 +26,7 @@ import {
   Crown,
   BarChart3,
   Lock,
+  Trash2,
 } from 'lucide-react';
 import { useClinic } from '../context/ClinicContext';
 import { Etablissement } from '../types';
@@ -45,6 +46,7 @@ export const SuperAdminView: React.FC = () => {
     allUsers,
     creerEtablissement,
     toggleEtablissementStatut,
+    supprimerEtablissement,
     setSelectedEtablissementId,
     selectedEtablissementId,
     setCurrentView,
@@ -61,6 +63,8 @@ export const SuperAdminView: React.FC = () => {
   const [filterStatut, setFilterStatut] = useState<'tous' | 'actif' | 'suspendu'>('tous');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [etabToDelete, setEtabToDelete] = useState<Etablissement | null>(null);
+  const [isDeletingEtab, setIsDeletingEtab] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
@@ -137,6 +141,22 @@ export const SuperAdminView: React.FC = () => {
       await toggleEtablissementStatut(etablissement.id);
       setActionSuccess(`Le statut de « ${etablissement.nom} » est désormais ${nouveauStatut.toUpperCase()}.`);
       setTimeout(() => setActionSuccess(null), 3500);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!etabToDelete) return;
+    setIsDeletingEtab(true);
+    try {
+      const nom = etabToDelete.nom;
+      await supprimerEtablissement(etabToDelete.id);
+      setActionSuccess(`L'établissement « ${nom} » a été supprimé définitivement du programme DARÔ Santé.`);
+      setTimeout(() => setActionSuccess(null), 4000);
+      setEtabToDelete(null);
+    } catch (e) {
+      console.error('Delete error', e);
+    } finally {
+      setIsDeletingEtab(false);
     }
   };
 
@@ -554,6 +574,16 @@ export const SuperAdminView: React.FC = () => {
                               >
                                 Personnel
                               </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setEtabToDelete(etablissement)}
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white border border-rose-200 hover:border-rose-600 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                                title="Supprimer définitivement cet établissement du programme"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Supprimer</span>
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -730,6 +760,82 @@ export const SuperAdminView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal: Suppression Définitive d'Établissement */}
+      {etabToDelete && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header rouge d'alerte */}
+            <div className="p-5 bg-gradient-to-r from-rose-50 to-amber-50 border-b border-rose-100 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-slate-900">
+                  Supprimer définitivement l'établissement ?
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Cette action retirera cette structure du programme DARÔ.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEtabToDelete(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Corps du message */}
+            <div className="p-5 space-y-4 text-xs text-slate-600">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-[#1E88E5]" />
+                  <span className="font-extrabold text-slate-900 text-sm">{etabToDelete.nom}</span>
+                </div>
+                <div className="text-[11px] text-slate-500 flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-slate-400" />
+                    {etabToDelete.ville}
+                  </span>
+                  <span>•</span>
+                  <span>Directeur : {etabToDelete.directeurNom || 'Non renseigné'}</span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-rose-50/80 border border-rose-200/80 text-rose-800 text-[11px] leading-relaxed">
+                <strong>Attention irréversible :</strong> La suppression de cet établissement supprimera son enregistrement dans la base cloud ainsi que les comptes soignants rattachés à cette clinique.
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setEtabToDelete(null)}
+                disabled={isDeletingEtab}
+                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-xl transition cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeletingEtab}
+                className="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeletingEtab ? (
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5" />
+                )}
+                <span>{isDeletingEtab ? 'Suppression en cours...' : 'Supprimer définitivement'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -2,6 +2,8 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -868,6 +870,63 @@ function saveDatabase(data: StorageData) {
 // In-memory cache backed by file
 let db: StorageData = loadDatabase();
 
+// Firebase Firestore Cloud Synchronization for Backend
+let firebaseDb: any = null;
+try {
+  const configPath = path.join(__dirname, 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    const fbConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    const fbApp = getApps().length === 0 ? initializeApp(fbConfig) : getApp();
+    firebaseDb = fbConfig.firestoreDatabaseId ? getFirestore(fbApp, fbConfig.firestoreDatabaseId) : getFirestore(fbApp);
+  }
+} catch (e) {
+  console.warn('[Server Firebase init warning]', e);
+}
+
+async function syncServerWithFirestore() {
+  if (!firebaseDb) return;
+  try {
+    const etabSnap = await getDocs(collection(firebaseDb, 'etablissements'));
+    if (!etabSnap.empty) {
+      const cloudEtabs: any[] = [];
+      etabSnap.forEach((d: any) => {
+        const item = d.data();
+        if (item && item.id) cloudEtabs.push(item);
+      });
+      if (cloudEtabs.length > 0) {
+        const map = new Map<string, any>();
+        cloudEtabs.forEach(e => map.set(e.id, e));
+        db.etablissements.forEach(e => {
+          if (e && e.id && !map.has(e.id)) map.set(e.id, e);
+        });
+        db.etablissements = Array.from(map.values());
+      }
+    }
+
+    const userSnap = await getDocs(collection(firebaseDb, 'users'));
+    if (!userSnap.empty) {
+      const cloudUsers: any[] = [];
+      userSnap.forEach((d: any) => {
+        const item = d.data();
+        if (item && item.id) cloudUsers.push(item);
+      });
+      if (cloudUsers.length > 0) {
+        const mapU = new Map<string, any>();
+        cloudUsers.forEach(u => mapU.set(u.id, u));
+        db.users.forEach(u => {
+          if (u && u.id && !mapU.has(u.id)) mapU.set(u.id, u);
+        });
+        db.users = Array.from(mapU.values());
+      }
+    }
+    saveDatabase(db);
+    console.log(`[Server] Synchronisé avec Firestore Cloud: ${db.etablissements.length} établissements, ${db.users.length} utilisateurs.`);
+  } catch (err) {
+    console.warn('[Server syncServerWithFirestore warning]', err);
+  }
+}
+syncServerWithFirestore();
+
 // -------------------------------------------------------------
 // API Endpoints
 // -------------------------------------------------------------
@@ -1061,6 +1120,18 @@ app.post('/api/etablissements', (req, res) => {
   db.activityLogs.unshift(logEntry);
 
   saveDatabase(db);
+
+  if (firebaseDb) {
+    try {
+      setDoc(doc(firebaseDb, 'etablissements', id), newEtab, { merge: true }).catch(() => {});
+      for (const st of initialStaff) {
+        setDoc(doc(firebaseDb, 'users', st.id), st, { merge: true }).catch(() => {});
+      }
+    } catch (fbErr) {
+      console.warn('[Server Firestore post error]', fbErr);
+    }
+  }
+
   res.status(201).json({ etablissement: newEtab, director: initialStaff[0], initialStaff });
 });
 
@@ -1093,9 +1164,62 @@ app.put('/api/etablissements/:id/statut', (req, res) => {
       etablissementNom: (updated as any).nom,
     });
     saveDatabase(db);
+
+    if (firebaseDb) {
+      setDoc(doc(firebaseDb, 'etablissements', id), updated, { merge: true }).catch(() => {});
+    }
+
     return res.json(updated);
   }
   res.status(404).json({ error: 'Établissement introuvable' });
+});
+
+app.delete('/api/etablissements/:id', async (req, res) => {
+  const { id } = req.params;
+  const etabToDelete = db.etablissements.find(e => e.id === id);
+  if (!etabToDelete) {
+    return res.status(404).json({ error: 'Établissement introuvable' });
+  }
+
+  // Remove from in-memory etablissements
+  db.etablissements = db.etablissements.filter(e => e.id !== id);
+  // Remove attached users (except superadmin)
+  db.users = db.users.filter(u => u.etablissementId !== id || u.role === 'superadmin');
+
+  // Log activity
+  const now = new Date();
+  db.activityLogs.unshift({
+    id: `act-${Date.now()}`,
+    timestamp: now.toISOString(),
+    timestampFormatted: now.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'medium' }),
+    userId: 'u-superadmin',
+    userNom: 'Fred Mbaï (Super Admin)',
+    userRole: 'superadmin',
+    action: 'Suppression Définitive Établissement',
+    details: `a retiré définitivement l'établissement "${etabToDelete.nom}" (${etabToDelete.ville}) du programme DARÔ Santé`,
+    adresseIP: req.ip || '127.0.0.1',
+    etablissementId: id,
+    etablissementNom: etabToDelete.nom,
+  });
+
+  saveDatabase(db);
+
+  // Sync delete with Firestore Cloud
+  if (firebaseDb) {
+    try {
+      await deleteDoc(doc(firebaseDb, 'etablissements', id));
+      const uSnap = await getDocs(collection(firebaseDb, 'users'));
+      for (const d of uSnap.docs) {
+        if (d.data().etablissementId === id && d.data().role !== 'superadmin') {
+          await deleteDoc(doc(firebaseDb, 'users', d.id));
+        }
+      }
+    } catch (e) {
+      console.warn('[Server Firestore delete error]', e);
+    }
+  }
+
+  res.json({ success: true, deletedId: id, nom: etabToDelete.nom });
 });
 
 // =============================================================

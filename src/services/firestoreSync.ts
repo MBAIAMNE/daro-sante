@@ -476,6 +476,28 @@ export async function saveEtablissementCloud(etab: Etablissement) {
   }
 }
 
+export async function deleteEtablissementCloud(etabId: string): Promise<boolean> {
+  try {
+    await deleteDoc(doc(db, COLLECTIONS.ETABLISSEMENTS, etabId));
+    // Also cleanup attached users of this establishment (excluding superadmin)
+    try {
+      const usersSnap = await getDocs(collection(db, COLLECTIONS.USERS));
+      for (const uDoc of usersSnap.docs) {
+        const uData = uDoc.data();
+        if (uData.etablissementId === etabId && uData.role !== 'superadmin') {
+          await deleteDoc(doc(db, COLLECTIONS.USERS, uDoc.id));
+        }
+      }
+    } catch (cleanErr) {
+      console.warn('[deleteEtablissementCloud user cleanup warn]', cleanErr);
+    }
+    return true;
+  } catch (e) {
+    console.warn('[deleteEtablissementCloud error]', e);
+    return false;
+  }
+}
+
 export async function saveInvoiceCloud(invoice: Invoice) {
   try {
     await setDoc(doc(db, COLLECTIONS.INVOICES, invoice.id), cleanForFirestore(invoice), { merge: true });

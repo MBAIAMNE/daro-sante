@@ -82,6 +82,7 @@ import {
   saveChatMessageCloud,
   saveNotificationCloud,
   saveEtablissementCloud,
+  deleteEtablissementCloud,
   saveInvoiceCloud,
   saveExamCloud,
   saveAppointmentCloud,
@@ -187,6 +188,7 @@ interface ClinicContextType {
   setSelectedEtablissementId: (id: string | 'all') => void;
   creerEtablissement: (data: Partial<Etablissement>) => Promise<Etablissement>;
   toggleEtablissementStatut: (id: string) => Promise<void>;
+  supprimerEtablissement: (id: string) => Promise<boolean>;
 
   // Navigation
   currentView: string;
@@ -335,15 +337,37 @@ function saveStorage<T>(key: string, data: T) {
   }
 }
 
+function getDeletedEtabIds(): string[] {
+  try {
+    if (typeof window === 'undefined') return [];
+    const raw = localStorage.getItem('daro_deleted_etablissements');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function markEtablissementDeleted(id: string) {
+  try {
+    if (typeof window === 'undefined') return;
+    const current = getDeletedEtabIds();
+    if (!current.includes(id)) {
+      current.push(id);
+      localStorage.setItem('daro_deleted_etablissements', JSON.stringify(current));
+    }
+  } catch (e) {}
+}
+
 function mergeEtablissements(currentList: Etablissement[], incomingList: Etablissement[]): Etablissement[] {
+  const deletedIds = new Set(getDeletedEtabIds());
   const map = new Map<string, Etablissement>();
-  // 1. First add all incoming
+  // 1. First add all incoming (skipping deleted)
   incomingList.forEach(e => {
-    if (e && e.id) map.set(e.id, e);
+    if (e && e.id && !deletedIds.has(e.id)) map.set(e.id, e);
   });
-  // 2. Overlay current list so custom created clinics are NEVER lost
+  // 2. Overlay current list (skipping deleted) so custom created clinics are NEVER lost
   currentList.forEach(e => {
-    if (e && e.id) {
+    if (e && e.id && !deletedIds.has(e.id)) {
       if (map.has(e.id)) {
         map.set(e.id, { ...map.get(e.id)!, ...e });
       } else {
@@ -3476,6 +3500,47 @@ export const ClinicProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }));
   };
 
+  const supprimerEtablissement = async (id: string): Promise<boolean> => {
+    // 1. Marquer comme supprimé dans le registre local pour interdire toute résurrection
+    markEtablissementDeleted(id);
+
+    // 2. Mise à jour optimiste de la liste des établissements
+    setEtablissements(prev => {
+      const updated = prev.filter(e => e.id !== id);
+      saveStorage('etablissements', updated);
+      return updated;
+    });
+
+    // 3. Détacher ou nettoyer le personnel rattaché à cet établissement (sauf Super Admin)
+    setAllUsers(prev => {
+      const updated = prev.filter(u => u.etablissementId !== id || u.role === 'superadmin');
+      saveStorage('users', updated);
+      return updated;
+    });
+
+    // 4. Si l'établissement sélectionné était celui-ci, basculer sur 'all'
+    if (selectedEtablissementId === id) {
+      setSelectedEtablissementId('all');
+    }
+
+    // 5. Supprimer sur le serveur backend Express
+    try {
+      fetch(`/api/etablissements/${id}`, { method: 'DELETE' }).catch(() => {});
+    } catch (e) {}
+
+    // 6. Supprimer définitivement dans la base Firestore Cloud
+    deleteEtablissementCloud(id).catch(err => {
+      console.warn('[Firestore deleteEtablissementCloud error]', err);
+    });
+
+    logActivity(
+      'Suppression Établissement',
+      `a supprimé définitivement l'établissement ID: ${id} du réseau DARÔ Santé`
+    );
+
+    return true;
+  };
+
   // Staff & User Management (strictly within user's establishment or target for superadmin)
   const creerUtilisateur = async (data: Omit<User, 'id' | 'dateCreation' | 'actif'> & { actif?: boolean }): Promise<User> => {
     // Règle de sécurité stricte : Un personnel de la clinique ne peut pas créer son compte lui-même.
@@ -3801,6 +3866,7 @@ export const ClinicProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         creerEtablissement,
         ajouterCliniquePartenaire,
         toggleEtablissementStatut,
+        supprimerEtablissement,
 
         currentView,
         setCurrentView,
