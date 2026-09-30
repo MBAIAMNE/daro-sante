@@ -5,12 +5,10 @@ import {
   Video,
   Clock,
   Menu,
-  CreditCard,
   Building2,
   FileText,
   MessageSquare,
   QrCode,
-  LogOut,
 } from 'lucide-react';
 import { useClinic } from '../context/ClinicContext';
 
@@ -28,8 +26,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenMenu }) 
     openPatientTab,
     queue,
     appointments,
-    getUnreadPatientMessagesCount,
-    logout,
   } = useClinic();
 
   const waitingCount = queue.filter(
@@ -110,16 +106,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenMenu }) 
           <Menu className="w-5 h-5 mb-0.5" />
           <span className="text-[10px] tracking-tight">Plus</span>
         </button>
-
-        <button
-          type="button"
-          onClick={logout}
-          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 transition cursor-pointer shadow-2xs"
-          title="Se déconnecter"
-        >
-          <LogOut className="w-5 h-5 mb-0.5 text-rose-600" />
-          <span className="text-[10px] font-black text-rose-700 tracking-tight">Déconnexion</span>
-        </button>
       </nav>
     );
   }
@@ -185,17 +171,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenMenu }) 
       >
         <Menu className="w-5 h-5 mb-0.5" />
         <span className="text-[10px] tracking-tight">Menu</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={logout}
-        id="mobile-nav-logout-btn"
-        className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 transition cursor-pointer shadow-2xs"
-        title="Se déconnecter"
-      >
-        <LogOut className="w-5 h-5 mb-0.5 text-rose-600" />
-        <span className="text-[10px] font-black text-rose-700 tracking-tight">Déconnexion</span>
       </button>
     </nav>
   );

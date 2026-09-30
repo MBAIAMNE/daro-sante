@@ -164,37 +164,6 @@ export const SuperAdminView: React.FC = () => {
 
   return (
     <div className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6 md:space-y-8">
-      {/* Mobile-Only Dedicated Admin Quick Bar with Visible Logout */}
-      <div className="md:hidden flex items-center justify-between p-3 rounded-2xl bg-white border border-slate-200 shadow-xs">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden border border-slate-300 shrink-0">
-            <img
-              src={superAdminUser?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80'}
-              alt={`${superAdminUser?.prenom} ${superAdminUser?.nom}`}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-black text-slate-800 truncate">
-              {superAdminUser?.prenom} {superAdminUser?.nom}
-            </p>
-            <span className="text-[10px] text-amber-600 font-bold block truncate">
-              👑 Super Admin Réseau
-            </span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={logout}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-xs transition-all shrink-0 cursor-pointer border border-rose-500/50"
-          title="Se déconnecter"
-        >
-          <LogOut className="w-4 h-4 shrink-0" />
-          <span>Déconnexion</span>
-        </button>
-      </div>
-
       {/* Creator & Super Admin Profile Card */}
       <div className="bg-gradient-to-r from-[#0B3C5D] via-[#0e4871] to-[#1E88E5] rounded-2xl p-4 sm:p-6 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-5 border border-white/10">
         <div className="flex items-center gap-3 sm:gap-4">
@@ -251,15 +220,6 @@ export const SuperAdminView: React.FC = () => {
           >
             <Plus className="w-4 h-4 text-[#1E88E5]" />
             <span>Ajouter Établissement</span>
-          </button>
-          <button
-            type="button"
-            onClick={logout}
-            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-sm transition-all border border-rose-400/50 cursor-pointer"
-            title="Se déconnecter de la plateforme"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Déconnexion</span>
           </button>
         </div>
       </div>
