@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, collection, doc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, collection, doc, getDocs, setDoc, deleteDoc } from 'firebase/firestore';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -877,7 +877,17 @@ try {
   if (fs.existsSync(configPath)) {
     const fbConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
     const fbApp = getApps().length === 0 ? initializeApp(fbConfig) : getApp();
-    firebaseDb = fbConfig.firestoreDatabaseId ? getFirestore(fbApp, fbConfig.firestoreDatabaseId) : getFirestore(fbApp);
+    try {
+      firebaseDb = initializeFirestore(
+        fbApp,
+        {
+          experimentalForceLongPolling: true,
+        },
+        fbConfig.firestoreDatabaseId
+      );
+    } catch {
+      firebaseDb = fbConfig.firestoreDatabaseId ? getFirestore(fbApp, fbConfig.firestoreDatabaseId) : getFirestore(fbApp);
+    }
   }
 } catch (e) {
   console.warn('[Server Firebase init warning]', e);

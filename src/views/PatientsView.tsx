@@ -36,6 +36,7 @@ import {
   Droplet,
   UserCog,
   Smartphone,
+  Trash2,
 } from 'lucide-react';
 import { useClinic } from '../context/ClinicContext';
 import { Patient, GroupeSanguin } from '../types';
@@ -53,6 +54,7 @@ export const PatientsView: React.FC = () => {
     patients,
     ajouterPatient,
     modifierPatient,
+    supprimerPatient,
     currentRole,
     currentUser,
     consultations,
@@ -89,6 +91,19 @@ export const PatientsView: React.FC = () => {
   // Patient Profile & Photo Edit Modal
   const [patientToEditProfile, setPatientToEditProfile] = useState<Patient | null>(null);
   const [showPatientProfileModal, setShowPatientProfileModal] = useState(false);
+
+  // Registration confirmation and delete states
+  const [registrationSuccessPatient, setRegistrationSuccessPatient] = useState<Patient | null>(null);
+  const [patientToDelete, setPatientToDelete] = useState<Patient | null>(null);
+  const [isDeletingPatient, setIsDeletingPatient] = useState<boolean>(false);
+  const [feedbackToast, setFeedbackToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (feedbackToast) {
+      const timer = setTimeout(() => setFeedbackToast(null), 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [feedbackToast]);
 
   // New patient modal
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
@@ -191,8 +206,58 @@ export const PatientsView: React.FC = () => {
       ] : [],
     });
     setShowNewPatientModal(false);
-    // Directly show the newly minted QR card
-    setShowQRCardModal(created);
+    // Show explicit confirmation modal & toast
+    setRegistrationSuccessPatient(created);
+    setFeedbackToast({
+      message: `Confirmation : Patient ${created.prenom} ${created.nom} (${created.matricule}) enregistré avec succès dans la base de données !`,
+      type: 'success',
+    });
+    // Reset new patient form
+    setNewPatient({
+      nom: '',
+      prenom: '',
+      dateNaissance: '',
+      sexe: 'M',
+      telephone: '+235 ',
+      adresse: '',
+      email: '',
+      groupeSanguin: 'Inconnu',
+      poids: '',
+      taille: '',
+      tensionHabituelle: '',
+      glycemieHabituelle: '',
+      allergies: '',
+      maladiesChroniques: '',
+      contactUrgenceNom: '',
+      contactUrgenceRelation: '',
+      contactUrgenceTel: '',
+      secretMedical: '',
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!patientToDelete) return;
+    setIsDeletingPatient(true);
+    const nom = `${patientToDelete.prenom} ${patientToDelete.nom}`;
+    try {
+      await supprimerPatient(patientToDelete.id);
+      setFeedbackToast({
+        message: `✓ Patient ${nom} supprimé avec succès de la base de données.`,
+        type: 'success',
+      });
+      if (selectedPatientDossier?.id === patientToDelete.id) {
+        setSelectedPatientDossier(null);
+      }
+      setPatientToDelete(null);
+    } catch (e) {
+      console.error(e);
+      setFeedbackToast({
+        message: `Erreur lors de la suppression du patient.`,
+        type: 'error',
+      });
+    } finally {
+      setIsDeletingPatient(false);
+    }
   };
 
   const handlePrintQRCard = () => {
@@ -208,6 +273,7 @@ export const PatientsView: React.FC = () => {
   };
 
   const canEditPatients = ['accueil', 'directeur', 'infirmier', 'medecin'].includes(currentRole);
+  const canDeletePatients = ['accueil', 'directeur', 'gestionnaire', 'medecin', 'infirmier', 'responsable_soins', 'superadmin'].includes(currentRole as any);
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6">
@@ -373,6 +439,16 @@ export const PatientsView: React.FC = () => {
               >
                 <ShieldAlert className="w-4 h-4" />
               </button>
+
+              {canDeletePatients && (
+                <button
+                  onClick={() => setPatientToDelete(patient)}
+                  className="p-1.5 rounded-lg border border-slate-200 hover:border-rose-300 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                  title="Supprimer ce patient de la base de données"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -697,6 +773,17 @@ export const PatientsView: React.FC = () => {
                     <UserCog className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Modifier profil & photo</span>
                   </button>
+                  {canDeletePatients && (
+                    <button
+                      type="button"
+                      onClick={() => setPatientToDelete(activePatient)}
+                      className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold transition flex items-center gap-1.5"
+                      title="Supprimer définitivement ce patient"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Supprimer</span>
+                    </button>
+                  )}
                   <button onClick={() => setSelectedPatientDossier(null)} className="text-slate-400 hover:text-slate-700 p-1">
                     ✕
                   </button>
@@ -1404,12 +1491,212 @@ export const PatientsView: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-[#0B3C5D] hover:bg-[#1E88E5] text-white text-xs font-bold shadow"
+                  className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow flex items-center gap-1.5 transition"
                 >
-                  Créer le dossier & Générer le QR
+                  <CheckCircle2 className="w-4 h-4 text-teal-200" />
+                  <span>Enregistrer le patient dans la base & Générer le QR</span>
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Registration Confirmation Modal */}
+      {registrationSuccessPatient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in text-center">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-700 mx-auto flex items-center justify-center shadow-xs">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
+                Confirmation d'Enregistrement
+              </span>
+              <h3 className="text-xl font-black text-slate-900">
+                Patient Enregistré avec Succès !
+              </h3>
+              <p className="text-xs text-slate-600 max-w-sm mx-auto">
+                Le dossier médical et la carte QR vitale ont été enregistrés et synchronisés dans la base de données sécurisée.
+              </p>
+            </div>
+
+            {/* Patient Recap Card */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-left space-y-2.5">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-mono block">Matricule Unique</span>
+                  <span className="text-base font-black text-[#0B3C5D] font-mono">
+                    {registrationSuccessPatient.matricule}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-400 uppercase font-mono block">Groupe Sanguin</span>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-rose-100 text-rose-800 text-xs font-black">
+                    {registrationSuccessPatient.groupeSanguin === 'Inconnu' ? 'Inconnu' : registrationSuccessPatient.groupeSanguin}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-xs space-y-1">
+                <p className="font-bold text-slate-900 text-sm">
+                  {registrationSuccessPatient.nom} {registrationSuccessPatient.prenom}
+                </p>
+                <p className="text-slate-600 text-xs">
+                  {registrationSuccessPatient.age && registrationSuccessPatient.age > 0 ? `${registrationSuccessPatient.age} ans` : ''} • {registrationSuccessPatient.sexe === 'M' ? 'Homme' : 'Femme'} • Tél : <span className="font-mono">{registrationSuccessPatient.telephone}</span>
+                </p>
+                {registrationSuccessPatient.adresse && (
+                  <p className="text-slate-500 text-[11px] truncate">
+                    📍 {registrationSuccessPatient.adresse}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Smartphone Sticker Highlight */}
+            <div className="p-3.5 rounded-2xl bg-teal-50 border-2 border-teal-300 text-left space-y-2">
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-teal-600 text-white flex items-center justify-center flex-shrink-0">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <div className="text-xs">
+                  <p className="font-bold text-teal-950">Autocollant QR Code pour Smartphone</p>
+                  <p className="text-[11px] text-teal-800">
+                    Format compact d'urgence à coller directement au dos du smartphone du patient.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div className="pt-2 flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPatientToPrintQR(registrationSuccessPatient);
+                  setQrPrintMode('sticker');
+                  setRegistrationSuccessPatient(null);
+                }}
+                className="flex-1 py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow transition flex items-center justify-center gap-1.5"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span>Imprimer Sticker Smartphone</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPatientToPrintQR(registrationSuccessPatient);
+                  setQrPrintMode('carte');
+                  setRegistrationSuccessPatient(null);
+                }}
+                className="py-2.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold transition flex items-center justify-center gap-1.5"
+              >
+                <Printer className="w-4 h-4 text-slate-500" />
+                <span>Carte Poche</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPatientDossier(registrationSuccessPatient);
+                  setRegistrationSuccessPatient(null);
+                }}
+                className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1.5"
+              >
+                <FileText className="w-4 h-4 text-slate-500" />
+                <span>Voir le Dossier</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setRegistrationSuccessPatient(null)}
+              className="text-xs text-slate-400 hover:text-slate-600 font-bold transition pt-1"
+            >
+              Fermer et retourner à la liste
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Patient Delete Confirmation Modal */}
+      {patientToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-rose-200 space-y-4 animate-in fade-in text-center">
+            <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 mx-auto flex items-center justify-center shadow-xs">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-black text-slate-900">
+                Confirmer la suppression du patient
+              </h3>
+              <p className="text-xs text-slate-500">
+                Êtes-vous sûr de vouloir supprimer définitivement ce dossier médical ?
+              </p>
+            </div>
+
+            <div className="p-3 bg-rose-50/80 rounded-2xl border border-rose-200 text-left text-xs space-y-1">
+              <p className="font-bold text-slate-900">
+                {patientToDelete.nom.toUpperCase()} {patientToDelete.prenom}
+              </p>
+              <p className="text-slate-600 font-mono text-[11px]">
+                Matricule : <strong>{patientToDelete.matricule}</strong> • Tél : {patientToDelete.telephone}
+              </p>
+              <p className="text-rose-700 text-[11px] font-medium pt-1">
+                ⚠️ Cette action supprimera le dossier de la base de données et retirera le patient des files d'attente actives.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingPatient}
+                onClick={() => setPatientToDelete(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingPatient}
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow transition flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingPatient ? 'Suppression en cours...' : 'Supprimer définitivement'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Feedback Toast Notification */}
+      {feedbackToast && (
+        <div className="fixed top-5 right-5 z-50 animate-in slide-in-from-top-3 fade-in duration-200 max-w-md">
+          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-xs font-bold ${
+            feedbackToast.type === 'success'
+              ? 'bg-emerald-900 text-white border-emerald-700'
+              : feedbackToast.type === 'error'
+              ? 'bg-rose-900 text-white border-rose-700'
+              : 'bg-slate-900 text-white border-slate-700'
+          }`}>
+            {feedbackToast.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            ) : feedbackToast.type === 'error' ? (
+              <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            ) : (
+              <Activity className="w-4 h-4 text-sky-400 flex-shrink-0" />
+            )}
+            <span>{feedbackToast.message}</span>
+            <button
+              onClick={() => setFeedbackToast(null)}
+              className="ml-2 text-white/70 hover:text-white p-0.5"
+            >
+              ✕
+            </button>
           </div>
         </div>
       )}

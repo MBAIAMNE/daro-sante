@@ -295,17 +295,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar container */}
       <aside
         id="app-sidebar"
-        className={`w-64 bg-white border-r border-slate-200 flex flex-col justify-between flex-shrink-0 z-40 transition-transform duration-200 ease-in-out fixed md:static top-0 bottom-0 h-full ${
+        className={`w-64 sm:w-72 bg-white border-r border-slate-200 flex flex-col justify-between flex-shrink-0 z-50 transition-transform duration-200 ease-in-out fixed md:static top-0 bottom-0 h-full ${
           open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
         {/* Brand Header */}
-        <div className="p-5 sm:p-6 flex items-center justify-between border-b border-slate-100">
+        <div className="p-4 sm:p-6 flex items-center justify-between border-b border-slate-100">
           <div className="flex items-center gap-3">
             <Logo size="sm" showText={false} />
             <div>
               <span className="text-2xl font-bold tracking-tight text-[#0B3C5D] leading-none block">DARÔ</span>
-              <span className="text-[10px] text-slate-600 font-bold tracking-wider uppercase block mt-0.5 truncate max-w-[145px]">
+              <span className="text-[10px] text-slate-600 font-bold tracking-wider uppercase block mt-0.5 truncate max-w-[130px] sm:max-w-[145px]">
                 {isPatientMode || currentRole === 'patient'
                   ? (activePatient?.etablissementNom || 'Clinique Partenaire')
                   : currentRole === 'superadmin'
@@ -322,12 +322,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={handleClose}
-            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5 md:hidden">
+            <button
+              onClick={logout}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-bold transition cursor-pointer"
+              title="Se déconnecter"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Quitter</span>
+            </button>
+            <button
+              onClick={handleClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Navigation list */}

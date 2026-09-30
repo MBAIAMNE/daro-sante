@@ -28,6 +28,7 @@ import {
   Check,
   Layers,
   Heart,
+  Trash2,
 } from 'lucide-react';
 import { useClinic } from '../context/ClinicContext';
 import { QueueTicket, VitalSigns, UrgenceLevel, Patient } from '../types';
@@ -74,6 +75,7 @@ export const QueueView: React.FC = () => {
     currentUser,
     enregistrerArriveePatient,
     ajouterPatient,
+    supprimerTicketQueue,
     effectuerTriage,
     appelerEnConsultation,
     setCurrentView,
@@ -87,6 +89,18 @@ export const QueueView: React.FC = () => {
   const [selectedPatientId, setSelectedPatientId] = useState(patients[0]?.id || '');
   const [existingPatientSearch, setExistingPatientSearch] = useState('');
   const [motifArrivee, setMotifArrivee] = useState('Fièvre élevée avec frissons intenses');
+
+  // Ticket delete state & toast
+  const [ticketToDelete, setTicketToDelete] = useState<QueueTicket | null>(null);
+  const [isDeletingTicket, setIsDeletingTicket] = useState(false);
+  const [queueToast, setQueueToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  React.useEffect(() => {
+    if (queueToast) {
+      const timer = setTimeout(() => setQueueToast(null), 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [queueToast]);
 
   // New patient form fields
   const [newPatientForm, setNewPatientForm] = useState({
@@ -217,6 +231,10 @@ export const QueueView: React.FC = () => {
       setLastIssuedTicket(ticket);
       setShowArrivalModal(false);
       setShowSuccessModal(true);
+      setQueueToast({
+        message: `Confirmation : Patient ${cleanNom} ${cleanPrenom} enregistré dans la base et ticket N° ${ticket.ticketNumero} émis !`,
+        type: 'success',
+      });
 
       // Reset form
       setNewPatientForm({
@@ -250,6 +268,33 @@ export const QueueView: React.FC = () => {
       setShowArrivalModal(false);
       setShowSuccessModal(true);
       setMotifArrivee('Fièvre élevée avec frissons intenses');
+      const patName = existingPat ? `${existingPat.prenom} ${existingPat.nom}` : 'Patient';
+      setQueueToast({
+        message: `Confirmation : Arrivée de ${patName} enregistrée et ticket N° ${ticket.ticketNumero} émis !`,
+        type: 'success',
+      });
+    }
+  };
+
+  const handleConfirmDeleteTicket = async () => {
+    if (!ticketToDelete) return;
+    setIsDeletingTicket(true);
+    const num = ticketToDelete.ticketNumero;
+    try {
+      await supprimerTicketQueue(ticketToDelete.id);
+      setQueueToast({
+        message: `✓ Ticket N° ${num} retiré avec succès de la file d'attente.`,
+        type: 'success',
+      });
+      setTicketToDelete(null);
+    } catch (e) {
+      console.error(e);
+      setQueueToast({
+        message: `Erreur lors de la suppression du ticket.`,
+        type: 'error',
+      });
+    } finally {
+      setIsDeletingTicket(false);
     }
   };
 
@@ -532,6 +577,15 @@ export const QueueView: React.FC = () => {
                     title="Voir le dossier médical"
                   >
                     <User className="w-4 h-4" />
+                  </button>
+
+                  {/* Delete / cancel ticket button */}
+                  <button
+                    onClick={() => setTicketToDelete(ticket)}
+                    className="p-2 rounded-xl border border-slate-200 hover:border-rose-300 hover:bg-rose-50 text-slate-400 hover:text-rose-600 text-xs font-medium transition"
+                    title="Retirer ce ticket / patient de la file d'attente"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -978,12 +1032,15 @@ export const QueueView: React.FC = () => {
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
-            <div className="space-y-1">
-              <h3 className="text-lg font-black text-slate-900">
-                Patient Admis & Enregistré avec Succès !
+            <div className="space-y-1.5">
+              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-black uppercase tracking-wider border border-emerald-200">
+                Confirmation d'Enregistrement
+              </span>
+              <h3 className="text-xl font-black text-slate-900">
+                Patient Enregistré & Admis avec Succès !
               </h3>
-              <p className="text-xs text-slate-500">
-                Les données sont enregistrées dans la base de données et le ticket de file d'attente est actif.
+              <p className="text-xs text-slate-600">
+                Les informations sont enregistrées dans la base de données et le ticket de file d'attente est actif.
               </p>
             </div>
 
@@ -1273,6 +1330,82 @@ export const QueueView: React.FC = () => {
           initialMode={printModalInitialMode}
           onClose={() => setPatientToPrintQR(null)}
         />
+      )}
+
+      {/* Ticket Delete / Cancel Confirmation Modal */}
+      {ticketToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-rose-200 space-y-4 animate-in fade-in text-center">
+            <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 mx-auto flex items-center justify-center shadow-xs">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-base font-black text-slate-900">
+                Retirer de la file d'attente
+              </h3>
+              <p className="text-xs text-slate-500">
+                Êtes-vous sûr de vouloir annuler ce ticket d'arrivée ?
+              </p>
+            </div>
+
+            <div className="p-3 bg-rose-50/80 rounded-2xl border border-rose-200 text-left text-xs space-y-1">
+              <p className="font-bold text-slate-900">
+                Ticket N° {ticketToDelete.ticketNumero} — {ticketToDelete.patientPrenom} {ticketToDelete.patientNom}
+              </p>
+              <p className="text-slate-600 font-mono text-[11px]">
+                Motif : {ticketToDelete.motifArrivee}
+              </p>
+              <p className="text-rose-700 text-[11px] font-medium pt-1">
+                ⚠️ Ce ticket sera retiré de la file d'attente active des urgences.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingTicket}
+                onClick={() => setTicketToDelete(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingTicket}
+                onClick={handleConfirmDeleteTicket}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow transition flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingTicket ? 'Annulation en cours...' : 'Retirer le ticket'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Queue Toast Notification */}
+      {queueToast && (
+        <div className="fixed top-5 right-5 z-50 animate-in slide-in-from-top-3 fade-in duration-200 max-w-md">
+          <div className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-xs font-bold ${
+            queueToast.type === 'success'
+              ? 'bg-emerald-900 text-white border-emerald-700'
+              : 'bg-rose-900 text-white border-rose-700'
+          }`}>
+            {queueToast.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+            )}
+            <span>{queueToast.message}</span>
+            <button
+              onClick={() => setQueueToast(null)}
+              className="ml-2 text-white/70 hover:text-white p-0.5"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

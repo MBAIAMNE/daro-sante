@@ -27,6 +27,7 @@ import {
   BarChart3,
   Lock,
   Trash2,
+  LogOut,
 } from 'lucide-react';
 import { useClinic } from '../context/ClinicContext';
 import { Etablissement } from '../types';
@@ -50,6 +51,7 @@ export const SuperAdminView: React.FC = () => {
     setSelectedEtablissementId,
     selectedEtablissementId,
     setCurrentView,
+    logout,
   } = useClinic();
 
   const superAdminUser = allUsers.find(u => u.id === 'u-superadmin' || u.role === 'superadmin') || currentUser;
@@ -161,12 +163,43 @@ export const SuperAdminView: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-4 sm:space-y-6 md:space-y-8">
+      {/* Mobile-Only Dedicated Admin Quick Bar with Visible Logout */}
+      <div className="md:hidden flex items-center justify-between p-3 rounded-2xl bg-white border border-slate-200 shadow-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden border border-slate-300 shrink-0">
+            <img
+              src={superAdminUser?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80'}
+              alt={`${superAdminUser?.prenom} ${superAdminUser?.nom}`}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-black text-slate-800 truncate">
+              {superAdminUser?.prenom} {superAdminUser?.nom}
+            </p>
+            <span className="text-[10px] text-amber-600 font-bold block truncate">
+              👑 Super Admin Réseau
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={logout}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-xs transition-all shrink-0 cursor-pointer border border-rose-500/50"
+          title="Se déconnecter"
+        >
+          <LogOut className="w-4 h-4 shrink-0" />
+          <span>Déconnexion</span>
+        </button>
+      </div>
+
       {/* Creator & Super Admin Profile Card */}
-      <div className="bg-gradient-to-r from-[#0B3C5D] via-[#0e4871] to-[#1E88E5] rounded-2xl p-5 sm:p-6 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-white/10">
-        <div className="flex items-center gap-4">
+      <div className="bg-gradient-to-r from-[#0B3C5D] via-[#0e4871] to-[#1E88E5] rounded-2xl p-4 sm:p-6 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sm:gap-5 border border-white/10">
+        <div className="flex items-center gap-3 sm:gap-4">
           <div className="relative group">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/40 shadow-md bg-white/10 flex-shrink-0">
+            <div className="w-14 sm:w-16 h-14 sm:h-16 rounded-2xl overflow-hidden border-2 border-white/40 shadow-md bg-white/10 flex-shrink-0">
               <img
                 src={superAdminUser?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80'}
                 alt={`${superAdminUser?.prenom} ${superAdminUser?.nom}`}
@@ -190,7 +223,7 @@ export const SuperAdminView: React.FC = () => {
               </span>
               <span className="text-[11px] text-sky-200">Direction Réseau DARÔ Santé</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black mt-1 tracking-tight">
+            <h2 className="text-lg sm:text-2xl font-black mt-1 tracking-tight">
               {superAdminUser?.prenom || 'Fred'} {superAdminUser?.nom || 'Mbaï'}
             </h2>
             <p className="text-xs text-sky-100/90 flex items-center gap-2 flex-wrap mt-0.5">
@@ -201,23 +234,32 @@ export const SuperAdminView: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto flex-wrap sm:flex-nowrap">
           <button
             type="button"
             onClick={() => setShowProfileModal(true)}
-            className="flex-1 md:flex-none px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center justify-center gap-2 border border-white/20 transition-all backdrop-blur-xs shadow-xs"
+            className="flex-1 md:flex-none px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center justify-center gap-1.5 sm:gap-2 border border-white/20 transition-all backdrop-blur-xs shadow-xs"
           >
             <Camera className="w-4 h-4" />
-            <span>Modifier Mon Profil & Photo</span>
+            <span>Mon Profil</span>
           </button>
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
             id="btn-ajouter-etablissement"
-            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-[#0B3C5D] hover:bg-sky-50 font-bold text-xs shadow-sm transition-all"
+            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-white text-[#0B3C5D] hover:bg-sky-50 font-bold text-xs shadow-sm transition-all"
           >
             <Plus className="w-4 h-4 text-[#1E88E5]" />
-            <span>Ajouter un Établissement</span>
+            <span>Ajouter Établissement</span>
+          </button>
+          <button
+            type="button"
+            onClick={logout}
+            className="flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-sm transition-all border border-rose-400/50 cursor-pointer"
+            title="Se déconnecter de la plateforme"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Déconnexion</span>
           </button>
         </div>
       </div>

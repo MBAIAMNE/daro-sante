@@ -151,41 +151,38 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30 flex-shrink-0">
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-2 sm:px-6 md:px-8 sticky top-0 z-30 flex-shrink-0">
       {/* Left: Mobile hamburger & Search input OR Patient space indicator */}
-      <div className="flex items-center gap-3 flex-1 max-w-xl">
+      <div className="flex items-center gap-1.5 sm:gap-3 flex-1 min-w-0 max-w-xl">
         <button
           onClick={handleSidebarToggle}
-          className="md:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          className="md:hidden p-2 rounded-xl text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 shrink-0 cursor-pointer"
           aria-label="Ouvrir le menu"
         >
           <Menu className="w-5 h-5" />
         </button>
 
         {isPatientMode || currentRole === 'patient' ? (
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-teal-50 border border-teal-200/80 flex items-center justify-center text-teal-700 shadow-2xs flex-shrink-0">
               <Heart className="w-4 h-4 fill-teal-500 text-teal-600" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold text-slate-800 truncate">
-                  Espace Santé Patient
-                </span>
-                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-teal-100 text-teal-800 border border-teal-200 flex-shrink-0">
-                  Compte Indépendant
+                  Espace Patient
                 </span>
               </div>
-              <p className="text-[10px] text-slate-500 font-medium truncate max-w-[200px] sm:max-w-none">
-                {activePatient?.etablissementNom || 'Clinique Partenaire'} • Pass Vital {activePatient?.matricule || currentUser.nomUtilisateur}
+              <p className="text-[10px] text-slate-500 font-medium truncate max-w-[120px] sm:max-w-none">
+                {activePatient?.matricule || currentUser.nomUtilisateur}
               </p>
             </div>
           </div>
         ) : (
           /* Search bar matching Professional Polish Theme */
-          <div ref={searchRef} className="relative w-full">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-              <Search className="w-4 h-4" />
+          <div ref={searchRef} className="relative w-full max-w-[120px] xs:max-w-[170px] sm:max-w-none">
+            <span className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              <Search className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
             </span>
             <input
               type="text"
@@ -195,8 +192,8 @@ export const Header: React.FC<HeaderProps> = ({
                 setShowSearchResults(true);
               }}
               onFocus={() => setShowSearchResults(true)}
-              placeholder="Rechercher un patient ou un dossier..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-100 border border-transparent rounded-lg text-sm focus:bg-white focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] focus:outline-none transition-all placeholder:text-slate-400 text-slate-800"
+              placeholder="Rechercher patient..."
+              className="w-full pl-8 sm:pl-9 pr-2.5 sm:pr-3 py-1.5 bg-slate-100 border border-transparent rounded-xl text-xs sm:text-sm focus:bg-white focus:border-[#1E88E5] focus:ring-1 focus:ring-[#1E88E5] focus:outline-none transition-all placeholder:text-slate-400 text-slate-800 truncate"
             />
 
             {/* Real-time search results popup */}
@@ -237,7 +234,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right controls */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         {isPatientMode || currentRole === 'patient' ? (
           <>
             {/* Quick Action: Emergency SAMU 15 */}
@@ -419,11 +416,11 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               id="header-logout-btn"
               onClick={logout}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 hover:text-rose-800 border border-rose-200/80 text-xs font-bold transition-all shadow-2xs cursor-pointer ml-1"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all shrink-0 cursor-pointer border border-rose-500/40"
               title="Se déconnecter et retourner à la page de connexion"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Déconnexion</span>
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline">Déconnexion</span>
             </button>
           </>
         ) : (
@@ -471,7 +468,7 @@ export const Header: React.FC<HeaderProps> = ({
             {onOpenQRDisplay && (
               <button
                 onClick={onOpenQRDisplay}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-lg transition-colors shadow-xs"
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-lg transition-colors shadow-xs"
                 title="Afficher le QR code d'urgence pour le scanner avec votre téléphone"
               >
                 <QrCode className="w-4 h-4 text-rose-600" />
@@ -597,16 +594,15 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Vertical Divider (Professional Polish Theme) */}
-            <div className="h-8 w-[1px] bg-slate-200"></div>
+            <div className="hidden md:block h-8 w-[1px] bg-slate-200"></div>
 
             {/* Primary Action Button: + Nouvelle Consultation */}
             <button
               onClick={() => setCurrentView('consultations')}
-              className="bg-[#1E88E5] text-white px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#1677cc] transition-colors shadow-sm flex items-center gap-1.5 whitespace-nowrap"
+              className="hidden md:flex bg-[#1E88E5] text-white px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-[#1677cc] transition-colors shadow-sm items-center gap-1.5 whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden xs:inline">Nouvelle Consultation</span>
-              <span className="xs:hidden">Consultation</span>
+              <span>Nouvelle Consultation</span>
             </button>
 
             {/* Workstation Badge & Quick Lock (Hospital Security) */}
@@ -642,7 +638,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Bouton Grand Livre d'Exploitation & Manuel */}
             <button
               onClick={() => setCurrentView('guide_livre')}
-              className="p-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+              className="hidden lg:flex p-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold items-center gap-1.5 transition shadow-xs cursor-pointer"
               title="Consulter le Grand Livre & Manuel d'Utilisation"
             >
               <BookOpen className="w-4 h-4 text-teal-700" />
@@ -766,11 +762,11 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               id="header-logout-btn"
               onClick={logout}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-rose-700 bg-rose-50 hover:bg-rose-100 hover:text-rose-800 border border-rose-200/80 text-xs font-bold transition-all shadow-2xs cursor-pointer ml-1"
+              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all shrink-0 cursor-pointer border border-rose-500/40"
               title="Se déconnecter et retourner à la page de connexion"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Déconnexion</span>
+              <LogOut className="w-4 h-4 shrink-0" />
+              <span className="hidden xs:inline">Déconnexion</span>
             </button>
           </>
         )}

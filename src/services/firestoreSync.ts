@@ -57,6 +57,15 @@ export function cleanForFirestore<T>(data: T): any {
   return JSON.parse(JSON.stringify(data));
 }
 
+// Helper to log listener errors, ignoring normal transient offline/unavailable reconnects
+function logListenerError(context: string, error: any) {
+  if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
+    // Normal transient offline state in Firestore SDK; operates in offline cache mode
+    return;
+  }
+  console.warn(`[Firestore ${context}]`, error?.message || error);
+}
+
 // Initialisation / Amorçage initial de la base de données Firestore si elle est vide
 export async function seedFirestoreIfEmpty(): Promise<boolean> {
   try {
@@ -119,8 +128,12 @@ export async function seedFirestoreIfEmpty(): Promise<boolean> {
 
     console.log('[Firestore] Vérification et synchronisation cloud terminées.');
     return true;
-  } catch (err) {
-    console.warn('[Firestore] Note amorçage cloud (vérifier connexion ou règles) :', err);
+  } catch (err: any) {
+    if (err?.code === 'unavailable' || err?.message?.includes('offline')) {
+      console.info('[Firestore] Initialisation hors-ligne active.');
+    } else {
+      console.warn('[Firestore] Note amorçage cloud (vérifier connexion ou règles) :', err?.message || err);
+    }
     return false;
   }
 }
@@ -140,11 +153,10 @@ export function subscribeEtablissements(callback: (items: Etablissement[]) => vo
         }
       },
       error => {
-        console.warn('[Firestore subscribeEtablissements]', error.message);
+        logListenerError('subscribeEtablissements', error);
       }
     );
   } catch (e) {
-    console.warn('[Firestore subscribeEtablissements init err]', e);
     return () => {};
   }
 }
@@ -164,7 +176,7 @@ export function subscribeUsers(callback: (items: User[]) => void) {
         }
       },
       error => {
-        console.warn('[Firestore subscribeUsers]', error.message);
+        logListenerError('subscribeUsers', error);
       }
     );
   } catch (e) {
@@ -187,7 +199,7 @@ export function subscribePatients(callback: (items: Patient[]) => void) {
         }
       },
       error => {
-        console.warn('[Firestore subscribePatients]', error.message);
+        logListenerError('subscribePatients', error);
       }
     );
   } catch (e) {
@@ -208,7 +220,7 @@ export function subscribeQueue(callback: (items: QueueTicket[]) => void) {
         callback(list);
       },
       error => {
-        console.warn('[Firestore subscribeQueue]', error.message);
+        logListenerError('subscribeQueue', error);
       }
     );
   } catch (e) {
@@ -229,7 +241,7 @@ export function subscribeConsultations(callback: (items: Consultation[]) => void
         callback(list);
       },
       error => {
-        console.warn('[Firestore subscribeConsultations]', error.message);
+        logListenerError('subscribeConsultations', error);
       }
     );
   } catch (e) {
@@ -250,7 +262,7 @@ export function subscribeOrdonnances(callback: (items: Ordonnance[]) => void) {
         callback(list);
       },
       error => {
-        console.warn('[Firestore subscribeOrdonnances]', error.message);
+        logListenerError('subscribeOrdonnances', error);
       }
     );
   } catch (e) {
@@ -271,7 +283,7 @@ export function subscribeChatMessages(callback: (items: ChatMessage[]) => void) 
         callback(list);
       },
       error => {
-        console.warn('[Firestore subscribeChatMessages]', error.message);
+        logListenerError('subscribeChatMessages', error);
       }
     );
   } catch (e) {
@@ -292,7 +304,7 @@ export function subscribeNotifications(callback: (items: Notification[]) => void
         callback(list);
       },
       error => {
-        console.warn('[Firestore subscribeNotifications]', error.message);
+        logListenerError('subscribeNotifications', error);
       }
     );
   } catch (e) {
@@ -313,7 +325,7 @@ export function subscribeInvoices(callback: (items: Invoice[]) => void) {
         callback(list);
       },
       error => {
-        console.warn('[Firestore subscribeInvoices]', error.message);
+        logListenerError('subscribeInvoices', error);
       }
     );
   } catch (e) {
@@ -334,7 +346,7 @@ export function subscribeExams(callback: (items: Examen[]) => void) {
         callback(list);
       },
       error => {
-        console.warn('[Firestore subscribeExams]', error.message);
+        logListenerError('subscribeExams', error);
       }
     );
   } catch (e) {
@@ -355,7 +367,7 @@ export function subscribeAppointments(callback: (items: Appointment[]) => void) 
         callback(list);
       },
       error => {
-        console.warn('[Firestore subscribeAppointments]', error.message);
+        logListenerError('subscribeAppointments', error);
       }
     );
   } catch (e) {
@@ -376,7 +388,7 @@ export function subscribeTransferts(callback: (items: TransfertInterHopital[]) =
         callback(list);
       },
       error => {
-        console.warn('[Firestore subscribeTransferts]', error.message);
+        logListenerError('subscribeTransferts', error);
       }
     );
   } catch (e) {
@@ -392,6 +404,16 @@ export async function savePatientCloud(patient: Patient) {
     return true;
   } catch (e) {
     console.warn('[savePatientCloud error]', e);
+    return false;
+  }
+}
+
+export async function deletePatientCloud(patientId: string): Promise<boolean> {
+  try {
+    await deleteDoc(doc(db, COLLECTIONS.PATIENTS, patientId));
+    return true;
+  } catch (e) {
+    console.warn('[deletePatientCloud error]', e);
     return false;
   }
 }

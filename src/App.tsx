@@ -274,7 +274,7 @@ const AppContent: React.FC = () => {
         />
 
         {/* Scrollable Main View Container (Centralized full-width & full-height inheritance with mobile bottom nav space) */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] w-full h-full pb-16 md:pb-0">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-[#F8FAFC] w-full h-full pb-24 md:pb-6">
           <div className="w-full min-h-full">
             {renderView()}
           </div>

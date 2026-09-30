@@ -1,7 +1,9 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import {
+  initializeFirestore,
   getFirestore,
+  setLogLevel,
   collection,
   doc,
   setDoc,
@@ -17,6 +19,13 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
+
+// Configure log level to error to prevent transient offline reconnection warnings from being reported as errors
+try {
+  setLogLevel('error');
+} catch {
+  // Ignore in environments where setLogLevel is not supported
+}
 
 // Configuration Firebase résolue (avec support des variables d'environnement optionnelles sur Render/Vercel)
 const resolvedConfig = {
@@ -35,11 +44,27 @@ const app = getApps().length === 0 ? initializeApp(resolvedConfig) : getApp();
 // Authentification
 export const auth = getAuth(app);
 
-// Firestore avec la base de données spécifique configurée
+// Firestore avec long polling forcé / auto-détection pour environnement iframe, preview et réseaux restreints
 const databaseId = resolvedConfig.firestoreDatabaseId;
-export const db = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
+let dbInstance: any;
+try {
+  dbInstance = initializeFirestore(
+    app,
+    {
+      experimentalForceLongPolling: true,
+      experimentalAutoDetectLongPolling: true,
+    },
+    databaseId
+  );
+} catch {
+  dbInstance = databaseId ? getFirestore(app, databaseId) : getFirestore(app);
+}
+
+export const db = dbInstance;
 
 export {
+  initializeFirestore,
+  getFirestore,
   collection,
   doc,
   setDoc,

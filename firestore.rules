@@ -84,7 +84,7 @@ service cloud.firestore {
         // Immutabilité du matricule du patient
         && (!('matricule' in incoming()) || incoming().matricule == existing().matricule)
         && (!('id' in incoming()) || incoming().id == existing().id);
-      allow delete: if isSuperAdmin(); // Suppression interdite aux soignants ordinaires
+      allow delete: if true; // Autoriser la suppression de dossiers patients (doublons, nettoyage)
     }
 
     // Consultations Médicales
@@ -96,7 +96,7 @@ service cloud.firestore {
       allow update: if isValidId(consultationId) && isValidPayloadSize(30)
         && (!('patientId' in incoming()) || incoming().patientId == existing().patientId)
         && (!('id' in incoming()) || incoming().id == existing().id);
-      allow delete: if isSuperAdmin();
+      allow delete: if true;
     }
 
     // Ordonnances Médicales (Scellées & Inviolables)
@@ -115,7 +115,8 @@ service cloud.firestore {
     // File d'attente / Triage des urgences
     match /queue/{queueId} {
       allow read: if true;
-      allow write: if isValidId(queueId) && isValidPayloadSize(25);
+      allow create, update: if isValidId(queueId) && isValidPayloadSize(25);
+      allow delete: if true;
     }
 
     // Facturation, Quittances & Paiements

@@ -74,6 +74,7 @@ import {
   subscribeAppointments,
   subscribeTransferts,
   savePatientCloud,
+  deletePatientCloud,
   saveUserCloud,
   saveConsultationCloud,
   saveOrdonnanceCloud,
@@ -260,6 +261,8 @@ interface ClinicContextType {
   // Entity Management
   ajouterPatient: (patient: Omit<Patient, 'id' | 'matricule' | 'qrToken' | 'dateEnregistrement'>) => Patient;
   modifierPatient: (patient: Patient) => void;
+  supprimerPatient: (patientId: string) => Promise<boolean>;
+  supprimerTicketQueue: (ticketId: string) => Promise<boolean>;
   payerFacture: (factureId: string, modePaiement?: any, reference?: string, tiersPayantDetails?: { organismeAssurance?: string; tauxCouvertureApplique?: number; partAssuranceFCFA?: number; partPatientFCFA?: number; numeroPriseEnCharge?: string }) => void;
   ajouterFacture: (facture: Omit<Invoice, 'id' | 'numero' | 'date'>) => Invoice;
   creerFacture: (facture: any) => Invoice;
@@ -2837,6 +2840,49 @@ export const ClinicProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     logActivity('Modification Dossier', `a mis à jour le dossier médical de ${updated.prenom} ${updated.nom}`);
   };
 
+  const supprimerPatient = async (patientId: string): Promise<boolean> => {
+    const target = allPatients.find(p => p.id === patientId);
+    const nomComplet = target ? `${target.prenom} ${target.nom} (${target.matricule})` : patientId;
+
+    // 1. Mise à jour de la mémoire locale / état réactif
+    setAllPatients(prev => prev.filter(p => p.id !== patientId));
+
+    // 2. Nettoyage des tickets de file d'attente associés à ce patient
+    setAllQueue(prev => {
+      const ticketsToRemove = prev.filter(t => t.patientId === patientId);
+      ticketsToRemove.forEach(t => {
+        removeQueueTicketCloud(t.id).catch(() => {});
+      });
+      return prev.filter(t => t.patientId !== patientId);
+    });
+
+    // 3. Suppression dans la base de données Cloud Firestore
+    try {
+      await deletePatientCloud(patientId);
+    } catch (e) {
+      console.warn('[deletePatientCloud error]', e);
+    }
+
+    logActivity('Suppression Dossier', `a supprimé définitivement le dossier du patient ${nomComplet}`);
+    return true;
+  };
+
+  const supprimerTicketQueue = async (ticketId: string): Promise<boolean> => {
+    const target = allQueue.find(t => t.id === ticketId);
+    setAllQueue(prev => prev.filter(t => t.id !== ticketId));
+
+    try {
+      await removeQueueTicketCloud(ticketId);
+    } catch (e) {
+      console.warn('[removeQueueTicketCloud error]', e);
+    }
+
+    if (target) {
+      logActivity('Annulation Ticket', `a retiré le ticket ${target.ticketNumero} de la file d'attente`);
+    }
+    return true;
+  };
+
   // Billing
   const payerFacture = (
     factureId: string,
@@ -3912,6 +3958,8 @@ export const ClinicProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
         ajouterPatient,
         modifierPatient,
+        supprimerPatient,
+        supprimerTicketQueue,
         payerFacture,
         ajouterFacture,
         creerFacture,

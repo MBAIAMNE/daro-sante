@@ -10,6 +10,7 @@ import {
   FileText,
   MessageSquare,
   QrCode,
+  LogOut,
 } from 'lucide-react';
 import { useClinic } from '../context/ClinicContext';
 
@@ -28,6 +29,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenMenu }) 
     queue,
     appointments,
     getUnreadPatientMessagesCount,
+    logout,
   } = useClinic();
 
   const waitingCount = queue.filter(
@@ -108,6 +110,16 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenMenu }) 
           <Menu className="w-5 h-5 mb-0.5" />
           <span className="text-[10px] tracking-tight">Plus</span>
         </button>
+
+        <button
+          type="button"
+          onClick={logout}
+          className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 transition cursor-pointer shadow-2xs"
+          title="Se déconnecter"
+        >
+          <LogOut className="w-5 h-5 mb-0.5 text-rose-600" />
+          <span className="text-[10px] font-black text-rose-700 tracking-tight">Déconnexion</span>
+        </button>
       </nav>
     );
   }
@@ -168,25 +180,22 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenMenu }) 
 
       <button
         type="button"
-        onClick={() => setCurrentView('appointments')}
-        className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer relative ${
-          currentView === 'appointments' ? 'text-purple-600 font-bold' : 'text-slate-500 hover:text-slate-800'
-        }`}
-      >
-        <Video className="w-5 h-5 mb-0.5" />
-        <span className="text-[10px] tracking-tight">Téléconsult</span>
-        {teleconsultCount > 0 && (
-          <span className="absolute top-0 right-1 w-2 h-2 rounded-full bg-purple-600" />
-        )}
-      </button>
-
-      <button
-        type="button"
         onClick={onOpenMenu}
         className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-500 hover:text-slate-800 transition cursor-pointer"
       >
         <Menu className="w-5 h-5 mb-0.5" />
         <span className="text-[10px] tracking-tight">Menu</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={logout}
+        id="mobile-nav-logout-btn"
+        className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 transition cursor-pointer shadow-2xs"
+        title="Se déconnecter"
+      >
+        <LogOut className="w-5 h-5 mb-0.5 text-rose-600" />
+        <span className="text-[10px] font-black text-rose-700 tracking-tight">Déconnexion</span>
       </button>
     </nav>
   );
