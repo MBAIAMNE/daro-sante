@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <!-- Background subtle gradient if needed -->
+    <linearGradient id="daroCrossGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0B3C5D" />
+      <stop offset="25%" stop-color="#0284C7" />
+      <stop offset="65%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+
+    <!-- Ring stroke gradient -->
+    <linearGradient id="ringInnerGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0B3C5D" />
+      <stop offset="100%" stop-color="#0D9488" />
+    </linearGradient>
+
+    <!-- Clip path for the Greek Cross -->
+    <clipPath id="crossClip">
+      <path d="M 140 20 L 260 20 L 260 140 L 380 140 L 380 260 L 260 260 L 260 380 L 140 380 L 140 260 L 20 260 L 20 140 L 140 140 Z" />
+    </clipPath>
+  </defs>
+
+  <!-- Group clipped to Greek Medical Cross -->
+  <g clip-path="url(#crossClip)">
+    <!-- Base Gradient Fill of Cross -->
+    <rect x="0" y="0" width="400" height="400" fill="url(#daroCrossGrad)" />
+
+    <!-- Circuit Board Traces & Channels in White -->
+    <!-- Top vertical separator channel -->
+    <rect x="194" y="0" width="12" height="150" fill="#FFFFFF" />
+
+    <!-- Horizontal full separator channel -->
+    <rect x="0" y="194" width="400" height="12" fill="#FFFFFF" />
+
+    <!-- Digital circuit tracks inside the right & bottom arms -->
+    <!-- Track 1: from center going right then down -->
+    <path d="M 200 100 L 250 100 L 250 150 L 300 150" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="square" />
+    
+    <!-- Track 2: Right arm stepping -->
+    <path d="M 260 180 L 285 180 L 285 145 L 350 145" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="square" />
+    <path d="M 285 180 L 330 180 L 330 200" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="square" />
+
+    <!-- Track 3: Lower arm stepping & circuit lines -->
+    <path d="M 175 250 L 175 285 L 210 285 L 210 330 L 250 330" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="square" />
+    <path d="M 210 285 L 210 250" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="square" />
+    <path d="M 140 290 L 180 290" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="square" />
+    <path d="M 235 250 L 235 300 L 260 300" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="square" />
+
+    <!-- Right Arm QR Finder Eye -->
+    <g transform="translate(300, 142)">
+      <rect x="0" y="0" width="50" height="50" fill="#FFFFFF" rx="2" />
+      <rect x="8" y="8" width="34" height="34" fill="url(#daroCrossGrad)" rx="1" />
+      <rect x="16" y="16" width="18" height="18" fill="#FFFFFF" rx="1" />
+    </g>
+
+    <!-- Bottom Arm QR Finder Eye -->
+    <g transform="translate(142, 300)">
+      <rect x="0" y="0" width="50" height="50" fill="#FFFFFF" rx="2" />
+      <rect x="8" y="8" width="34" height="34" fill="url(#daroCrossGrad)" rx="1" />
+      <rect x="16" y="16" width="18" height="18" fill="#FFFFFF" rx="1" />
+    </g>
+
+    <!-- QR Matrix Digital Pixels in Right Arm -->
+    <!-- Row A -->
+    <rect x="272" y="214" width="14" height="14" fill="#FFFFFF" />
+    <rect x="292" y="214" width="14" height="14" fill="#FFFFFF" />
+    <rect x="322" y="214" width="14" height="14" fill="#FFFFFF" />
+    <rect x="352" y="214" width="14" height="14" fill="#FFFFFF" />
+    <!-- Row B -->
+    <rect x="272" y="234" width="14" height="14" fill="#FFFFFF" />
+    <rect x="302" y="234" width="14" height="14" fill="#FFFFFF" />
+    <rect x="332" y="234" width="14" height="14" fill="#FFFFFF" />
+    <rect x="352" y="234" width="14" height="14" fill="#FFFFFF" />
+    <!-- Row C -->
+    <rect x="292" y="254" width="14" height="14" fill="#FFFFFF" />
+    <rect x="312" y="254" width="14" height="14" fill="#FFFFFF" />
+    <rect x="342" y="254" width="14" height="14" fill="#FFFFFF" />
+
+    <!-- QR Matrix Digital Pixels in Bottom Arm -->
+    <rect x="206" y="254" width="14" height="14" fill="#FFFFFF" />
+    <rect x="226" y="254" width="14" height="14" fill="#FFFFFF" />
+    <rect x="206" y="274" width="14" height="14" fill="#FFFFFF" />
+    <rect x="246" y="274" width="14" height="14" fill="#FFFFFF" />
+    <rect x="226" y="294" width="14" height="14" fill="#FFFFFF" />
+    <rect x="246" y="294" width="14" height="14" fill="#FFFFFF" />
+    <rect x="206" y="324" width="14" height="14" fill="#FFFFFF" />
+    <rect x="226" y="324" width="14" height="14" fill="#FFFFFF" />
+    <rect x="246" y="344" width="14" height="14" fill="#FFFFFF" />
+    <rect x="206" y="354" width="14" height="14" fill="#FFFFFF" />
+    <rect x="226" y="354" width="14" height="14" fill="#FFFFFF" />
+  </g>
+
+  <!-- TWO INTERLOCKING RINGS IN EXACT CENTER -->
+  <g id="interlocking-rings">
+    <!-- Ring 1 (Left Ring): Center (175, 200) -->
+    <!-- White outer boundary -->
+    <circle cx="175" cy="200" r="46" fill="none" stroke="#FFFFFF" stroke-width="14" />
+    <!-- Inner subtle ring border -->
+    <circle cx="175" cy="200" r="46" fill="none" stroke="url(#ringInnerGrad)" stroke-width="2" />
+
+    <!-- Ring 2 (Right Ring): Center (225, 200) -->
+    <!-- White outer boundary -->
+    <circle cx="225" cy="200" r="46" fill="none" stroke="#FFFFFF" stroke-width="14" />
+    <!-- Inner subtle ring border -->
+    <circle cx="225" cy="200" r="46" fill="none" stroke="url(#ringInnerGrad)" stroke-width="2" />
+
+    <!-- Interlocking Weave: Left Ring Top-Right Arc over Right Ring -->
+    <path d="M 190 160 A 46 46 0 0 1 221 200" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" />
+    <path d="M 190 160 A 46 46 0 0 1 221 200" fill="none" stroke="url(#ringInnerGrad)" stroke-width="2" stroke-linecap="round" />
+
+    <!-- Right Ring Bottom-Left Arc over Left Ring -->
+    <path d="M 210 240 A 46 46 0 0 1 179 200" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" />
+    <path d="M 210 240 A 46 46 0 0 1 179 200" fill="none" stroke="url(#ringInnerGrad)" stroke-width="2" stroke-linecap="round" />
+  </g>
+</svg>
