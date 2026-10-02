@@ -2198,34 +2198,114 @@ app.delete('/api/assignments/:id', (req, res) => {
 });
 
 // -------------------------------------------------------------
-// Vite Middleware / Static Servicing
+// Vite Middleware / Robust Static Servicing with MIME protection
 // -------------------------------------------------------------
 
-async function startServer() {
-  const distPath = path.join(process.cwd(), 'dist');
-  if (fs.existsSync(distPath) && fs.existsSync(path.join(distPath, 'index.html'))) {
-    app.use(express.static(distPath, { maxAge: 0, etag: false }));
-    app.get('*', (_req, res) => {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
-  } else if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
-    app.use(express.static(distPath, { maxAge: 0, etag: false }));
-    app.get('*', (_req, res) => {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+function serveAssetFile(filePath: string, res: express.Response) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.css') {
+    res.setHeader('Content-Type', 'text/css; charset=UTF-8');
+  } else if (ext === '.js' || ext === '.mjs') {
+    res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+  } else if (ext === '.json') {
+    res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+  } else if (ext === '.svg') {
+    res.setHeader('Content-Type', 'image/svg+xml');
+  } else if (ext === '.png') {
+    res.setHeader('Content-Type', 'image/png');
+  } else if (ext === '.jpg' || ext === '.jpeg') {
+    res.setHeader('Content-Type', 'image/jpeg');
+  } else if (ext === '.woff2') {
+    res.setHeader('Content-Type', 'font/woff2');
   }
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  return res.sendFile(filePath);
+}
+
+async function startServer() {
+  const rootDir = process.cwd();
+  const candidateDistDirs = [
+    path.join(rootDir, 'dist'),
+    path.join(__dirname, 'dist'),
+    path.join(rootDir, 'public'),
+    path.join(__dirname, 'public'),
+    rootDir,
+    __dirname,
+  ];
+
+  const candidateAssetDirs = [
+    path.join(rootDir, 'dist', 'assets'),
+    path.join(__dirname, 'dist', 'assets'),
+    path.join(rootDir, 'public', 'assets'),
+    path.join(__dirname, 'public', 'assets'),
+    path.join(rootDir, 'assets'),
+    path.join(__dirname, 'assets'),
+  ];
+
+  // Explicit /assets handler to guarantee correct MIME types and prevent text/html fallback
+  app.use('/assets', (req, res, next) => {
+    const assetName = req.path.replace(/^\//, '');
+    for (const assetDir of candidateAssetDirs) {
+      const fullPath = path.join(assetDir, assetName);
+      if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+        return serveAssetFile(fullPath, res);
+      }
+    }
+    // Never send index.html with MIME text/html for missing asset files
+    return res.status(404).type('text/plain').send(`Asset /assets/${assetName} not found`);
+  });
+
+  // Dedicated routes for PWA manifest and icons
+  app.get('/manifest.json', (_req, res) => {
+    for (const dir of candidateDistDirs) {
+      const p = path.join(dir, 'manifest.json');
+      if (fs.existsSync(p) && fs.statSync(p).isFile()) {
+        res.setHeader('Content-Type', 'application/json; charset=UTF-8');
+        return res.sendFile(p);
+      }
+    }
+    return res.status(404).type('text/plain').send('manifest.json not found');
+  });
+
+  app.get(['/icon.svg', '/favicon.ico'], (req, res) => {
+    const file = req.path === '/favicon.ico' ? 'icon.svg' : req.path.replace(/^\//, '');
+    for (const dir of candidateDistDirs) {
+      const p = path.join(dir, file);
+      if (fs.existsSync(p) && fs.statSync(p).isFile()) {
+        res.setHeader('Content-Type', 'image/svg+xml');
+        return res.sendFile(p);
+      }
+    }
+    return res.status(404).type('text/plain').send('icon not found');
+  });
+
+  // Static directory mounting for all candidate directories
+  for (const dir of candidateDistDirs) {
+    if (fs.existsSync(dir)) {
+      app.use(express.static(dir, { maxAge: 0, etag: false }));
+    }
+  }
+
+  // SPA fallback for HTML navigation requests
+  app.get('*', (req, res) => {
+    // If request is for a static file with an extension, do not send HTML
+    if (/\.[a-zA-Z0-9]+$/.test(req.path) && !req.path.endsWith('.html')) {
+      return res.status(404).type('text/plain').send(`Static resource ${req.path} not found`);
+    }
+
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    for (const dir of candidateDistDirs) {
+      const htmlPath = path.join(dir, 'index.html');
+      if (fs.existsSync(htmlPath)) {
+        return res.sendFile(htmlPath);
+      }
+    }
+
+    return res.status(404).type('text/plain').send('index.html not found');
+  });
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`DARÔ Multi-Hospital Network Server running on http://0.0.0.0:${PORT}`);
