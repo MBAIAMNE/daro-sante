@@ -2242,6 +2242,47 @@ async function startServer() {
     path.join(__dirname, 'assets'),
   ];
 
+  const DEFAULT_MANIFEST = {
+    id: '/',
+    name: 'DARÔ Clinique & Urgences QR',
+    short_name: 'DARÔ',
+    description: 'Système médical de gestion clinique et fiches d\'urgence QR à N\'Djamena, Tchad.',
+    start_url: '/',
+    scope: '/',
+    display: 'standalone',
+    background_color: '#0B3C5D',
+    theme_color: '#0B3C5D',
+    icons: [
+      {
+        src: '/icon.svg',
+        sizes: '192x192 512x512',
+        type: 'image/svg+xml',
+        purpose: 'any',
+      },
+    ],
+  };
+
+  const DEFAULT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="daroCrossGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0B3C5D" />
+      <stop offset="25%" stop-color="#0284C7" />
+      <stop offset="65%" stop-color="#0D9488" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <clipPath id="crossClip">
+      <path d="M 140 20 L 260 20 L 260 140 L 380 140 L 380 260 L 260 260 L 260 380 L 140 380 L 140 260 L 20 260 L 20 140 L 140 140 Z" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#crossClip)">
+    <rect x="0" y="0" width="400" height="400" fill="url(#daroCrossGrad)" />
+    <rect x="194" y="0" width="12" height="150" fill="#FFFFFF" />
+    <rect x="0" y="194" width="400" height="12" fill="#FFFFFF" />
+  </g>
+  <circle cx="175" cy="200" r="46" fill="none" stroke="#FFFFFF" stroke-width="14" />
+  <circle cx="225" cy="200" r="46" fill="none" stroke="#FFFFFF" stroke-width="14" />
+</svg>`;
+
   // Explicit /assets handler to guarantee correct MIME types and prevent text/html fallback
   app.use('/assets', (req, res, next) => {
     const assetName = req.path.replace(/^\//, '');
@@ -2251,11 +2292,39 @@ async function startServer() {
         return serveAssetFile(fullPath, res);
       }
     }
+
+    // Smart fallback for versioned or hashed JS/CSS files:
+    // If a request comes for index-*.js, find any matching index-*.js in asset dirs
+    if (assetName.startsWith('index-') && assetName.endsWith('.js')) {
+      for (const assetDir of candidateAssetDirs) {
+        if (fs.existsSync(assetDir)) {
+          const files = fs.readdirSync(assetDir);
+          const fallbackJs = files.find(f => f.startsWith('index-') && f.endsWith('.js'));
+          if (fallbackJs) {
+            return serveAssetFile(path.join(assetDir, fallbackJs), res);
+          }
+        }
+      }
+    }
+
+    // If a request comes for index-*.css, find any matching index-*.css
+    if (assetName.startsWith('index-') && assetName.endsWith('.css')) {
+      for (const assetDir of candidateAssetDirs) {
+        if (fs.existsSync(assetDir)) {
+          const files = fs.readdirSync(assetDir);
+          const fallbackCss = files.find(f => f.startsWith('index-') && f.endsWith('.css'));
+          if (fallbackCss) {
+            return serveAssetFile(path.join(assetDir, fallbackCss), res);
+          }
+        }
+      }
+    }
+
     // Never send index.html with MIME text/html for missing asset files
     return res.status(404).type('text/plain').send(`Asset /assets/${assetName} not found`);
   });
 
-  // Dedicated routes for PWA manifest and icons
+  // Dedicated routes for PWA manifest and icons with inline fallbacks
   app.get('/manifest.json', (_req, res) => {
     for (const dir of candidateDistDirs) {
       const p = path.join(dir, 'manifest.json');
@@ -2264,7 +2333,7 @@ async function startServer() {
         return res.sendFile(p);
       }
     }
-    return res.status(404).type('text/plain').send('manifest.json not found');
+    return res.json(DEFAULT_MANIFEST);
   });
 
   app.get(['/icon.svg', '/favicon.ico'], (req, res) => {
@@ -2276,7 +2345,8 @@ async function startServer() {
         return res.sendFile(p);
       }
     }
-    return res.status(404).type('text/plain').send('icon not found');
+    res.setHeader('Content-Type', 'image/svg+xml');
+    return res.send(DEFAULT_ICON_SVG);
   });
 
   // Static directory mounting for all candidate directories
