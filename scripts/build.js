@@ -15,6 +15,12 @@ function copyDir(src, dest) {
   }
 }
 
+function safeCopyFile(src, dest) {
+  const destDir = path.dirname(dest);
+  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+  fs.copyFileSync(src, dest);
+}
+
 const root = process.cwd();
 const distDir = path.join(root, 'dist');
 const distAssets = path.join(distDir, 'assets');
@@ -23,10 +29,13 @@ const distHtml = path.join(distDir, 'index.html');
 if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir, { recursive: true });
 }
+if (!fs.existsSync(path.join(root, 'public'))) {
+  fs.mkdirSync(path.join(root, 'public'), { recursive: true });
+}
 
 // Ensure dist/index.html exists (fallback to root index.html)
 if (!fs.existsSync(distHtml) && fs.existsSync(path.join(root, 'index.html'))) {
-  fs.copyFileSync(path.join(root, 'index.html'), distHtml);
+  safeCopyFile(path.join(root, 'index.html'), distHtml);
 }
 
 // Sync assets across dist, public and root
@@ -46,14 +55,14 @@ for (const file of ['manifest.json', 'icon.svg']) {
   const rootF = path.join(root, file);
 
   if (fs.existsSync(distF)) {
-    fs.copyFileSync(distF, pubF);
-    fs.copyFileSync(distF, rootF);
+    safeCopyFile(distF, pubF);
+    safeCopyFile(distF, rootF);
   } else if (fs.existsSync(pubF)) {
-    fs.copyFileSync(pubF, distF);
-    fs.copyFileSync(pubF, rootF);
+    safeCopyFile(pubF, distF);
+    safeCopyFile(pubF, rootF);
   } else if (fs.existsSync(rootF)) {
-    fs.copyFileSync(rootF, distF);
-    fs.copyFileSync(rootF, pubF);
+    safeCopyFile(rootF, distF);
+    safeCopyFile(rootF, pubF);
   }
 }
 
